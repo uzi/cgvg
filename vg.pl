@@ -1,5 +1,5 @@
 # vg - Vi Grepped - edit a file at a line specified in a cg search.
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5
+# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5.1
 #
 # Usage: vg number
 #
@@ -56,6 +56,8 @@ if (-f $RCFILE) {
                 } elsif ($key =~ /^BOLD$/) {
                         next;
                 } elsif ($key =~ /^BOLD_ALTERNATE$/) {
+                        next;
+                } elsif ($key =~ /^SEARCH$/) {
                         next;
                 } elsif ($key =~ /^COLOR[S1-4]$/) {
                         next;

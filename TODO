@@ -5,8 +5,7 @@ please email me at juziel@home.com ...
 * Optimization!  This program has to do a lot of searching, and any
   and all speed improvements need to be applied.
 
-* Perhaps expand the .cgvgrc file's ability to also specify a per-user
-  default search path to use rather than all users having the same default.
+* Perhaps improve error checking on the .cgvgrc file
 
 * Add options and arguments.  Currently, the only option beyond the
   search pattern and search list is '-i', or case insensitive.  Additional

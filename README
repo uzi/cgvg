@@ -1,6 +1,6 @@
 Code Grep and Vi Grepped
 cg, vg - tools for finding and modifying on keywords
-Joshua Uziel <juziel@home.com> - August 18, 1999 - version 1.5
+Joshua Uziel <juziel@home.com> - August 25, 1999 - version 1.5.1
 
 All too often I need to dig through source code.  Where something
 is defined, used, what files, etc.  There's a great tool for doing
@@ -70,6 +70,18 @@ of time.  Feel free to send me comments or suggestions...
 ----------------
 REVISION HISTORY
 ----------------
+August 25, 1999
+1.5.1 - Fixed a bug where if one and only one file was specified
+	to search through and it was an existing text file that it
+	would read that file rather than blindly assume it's a
+	search expression and do a huge recursive search.
+
+	Cleaned up the finding code a bit.  Now both the default
+	search and a user-specified search use the same &wanted
+	subroutine, with the search list being specified by a
+	$SEARCH variable.  Along with this, the default search list
+	is user-defineable in the .cgvgrc file as well.
+
 August 18, 1999
 1.5 -	The big change of this version is that now the searching is
 	handled by Perl rather than by grep(1), egrep(1) and fgrep(1).

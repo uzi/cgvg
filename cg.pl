@@ -1,5 +1,5 @@
 # cg - Code Grep - grep recursively through files and disiplay matches
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5
+# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5.1
 #
 # usage: cg [-i] [pattern] [files]
 #
@@ -40,47 +40,24 @@ use POSIX;
 use File::Find;
 require "find.pl";
 
+
 # Search for wanted entries for perl internal find subroutine.
 sub wanted {
 
-	# If there isn't a specified thing to search for, use the default.
-	unless ($nondash) {
-		if ( 
+	# Skip things that aren't normal files (like directories).
+	if ((($dev,$ino,$mode,$nlink,$uid,$gid) = lstat($_)) && -f _) {
 
-		# Skip things that aren't normal files (like directories).
-		(($dev,$ino,$mode,$nlink,$uid,$gid) = lstat($_)) && -f _ &&
+		# Kill the leading ./ and push it on the @LIST
+		$name =~ s/^\.\///;
 
-		/^.*\.[chs]$/       # *.c, *.h and *.s 
-		||
-		/^.*\.cc$/          # *.cc
-		||
-		/^Make.*$/          # Make*
-		||
-		/^.*\.p[lm]$/       # *.pl and *.pm
-		||
-		/^.*\.java$/        # *.java
-		||
-		/^.*\..*sh$/        # *.*sh
-		||
-		/^.*\.idl$/         # *.idl
-
-		) {
-			# Kill the leading ./ and push it on the @LIST
-			$name =~ s/^\.\///;
-			push @LIST, $name;
-		}
-	} else {
-		# Skip things that aren't normal files (like directories).
-		if ((($dev,$ino,$mode,$nlink,$uid,$gid) = lstat($_)) && -f _) {
-
-			# Kill the leading ./ and push it on the @LIST
-			$name =~ s/^\.\///;
-
-			# Push onto the list if we have a match
-			push @LIST, $name if ($name =~ /$SEARCH/);
-		}
+		# Push onto the list if we have a match
+		push @LIST, $name if ($name =~ /$SEARCH/o);
 	}
 }
+
+# Default search list:
+# 	Make* *.c *.h *.s *.cc *.pl *.pm *.java *.*sh *.idl
+$SEARCH = '(^Make.*$|^.*\.([chs]|cc|p[lm]|java|.*sh|idl)$)';
 
 # Where to store the data
 $LOGFILE = "$ENV{'HOME'}/.cglast";
@@ -145,6 +122,9 @@ if (-f $RCFILE) {
 			$BOLD_ALTERNATE=$value;
 		} elsif ($key =~ /^EDITOR$/) {
 			$EDITOR=$value;
+		} elsif ($key =~ /^SEARCH$/) {
+			print "$value\n";
+			$SEARCH=$value;
 
 		# Change colors from the defaults.
 		} elsif ($key =~ /^COLOR[1-4]$/) {
@@ -197,9 +177,18 @@ if ($#ARGV+1) {
 	# If we have a file list of size 1, use it as a search pattern
 	# for files automatically.
 	if ($nondash == 1) {
-		$SEARCH = $FILELIST[0];
-		$SEARCH =~ s/\./\\\./g;		# . --> \.
-		$SEARCH =~ s/\*/\.\*/g;		# * --> .*
+		
+		# Unless that one thing is a file, in which case we just
+		# search it.
+		if (-T $FILELIST[0]) {
+			die "error: File $FILELIST[0] not readable.\n"
+				unless (-r $FILELIST[0]);
+			$nondash++;	# Psych out the $nondash check later.
+		} else {
+			$SEARCH = $FILELIST[0];
+			$SEARCH =~ s/\./\\\./g;		# . --> \.
+			$SEARCH =~ s/\*/\.\*/g;		# * --> .*
+		}
 	}
 
 	# Check our arguments
@@ -232,7 +221,7 @@ if ($#ARGV+1) {
 	@LIST = grep !/$EXCLUDE/, @LIST;
 
 	# Special case of no matching files, we die with an error.
-	die "error: No matching files found.\n" if ($#LIST <= 0);
+	die "error: No matching files found.\n" if ($#LIST < 0);
 
 	# Search through the list of files and generate the $LOGFILE
 	foreach $file (@LIST) {
@@ -256,7 +245,7 @@ if ($#ARGV+1) {
 # differently from how it's stored to make it easier on the human eyes.
 
 # Attempt to get the number of columns from an "stty -a"
-if ($COL = `stty -a 2> /dev/null | grep column 2> /dev/null`) {
+if ($COL = `stty -a | grep column 2> /dev/null`) {
 
 	# Strip out the value with the string "column"
 	@TMP = split ';', $COL;

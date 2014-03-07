@@ -7,6 +7,9 @@
 # default editor.
 EDITOR=vi
 
+# Default list of files to search through
+SEARCH=(^Make.*$|^.*\.([chs]|cc|p[lm]|java|.*sh|idl)$)
+
 # Colors on or off (1 or 0)
 COLORS=1
 
