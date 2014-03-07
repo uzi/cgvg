@@ -1,17 +1,25 @@
 .\"             -*-Nroff-*-
 .\"
-.TH VG 1 "18 Aug 1999" "" ""
+.TH VG 1 "3 Nov 1999" "" ""
 .SH NAME
 vg \- Edit an entry found by the cg script
 .SH SYNOPSIS
-.B vg 
-number
+.B vg
+[ -l ] number
 .SH DESCRIPTION
 .B "vg "
 is the companion script to cg(1) which fires off an editor to
 edit an entry found by cg(1).  This script is run only with one
 argument which just be an integer within rage of the output of
-cg(1), as seen on the far left column.  (Such as "vg 0".)
+cg(1), as seen on the far left column.  (Such as "vg 0".)  Running
+it with the
+.B -l
+option edits using the log from the last search.
+.PP
+.SH "COMMAND\-LINE OPTIONS"
+.TP 0.5i
+.B "\-l "
+Edits from the last search rather than from this terminal
 .PP
 .SH FILES
 .ne 3

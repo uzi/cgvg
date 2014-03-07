@@ -1,12 +1,16 @@
 cgvg Installation Instructions
 ==============================
 
-Installation is quick and painless... edit the Makefile and set
-the appropriate path to a Perl 5 interpreter with the "PERL"
-variable, and the proper "PREFIX" for the path where you'd like
-to install it.
+Installation is quick and painless...
 
-Type "make" to generate the "cg" and "vg" executables.  Type
-"make install" to copy the files to the appropriate places, or
-copy them by hand.
+./configure
+make install
+
+(A "make" isn't really needed.)  An possible option you might
+want to use to configure is --prefix= to configure where it
+goes instead of the default... so "./configure --prefix=/usr"
+to make sure it goes into directories under /usr, etc.
+
+If you want to modify per-user options, copy the cgvgrc-example
+file into your home directory as .cgvgrc ... have fun! :)
 
