@@ -1,5 +1,5 @@
 # cgvg-common.pl - common variables and functions to cgvg
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.6.0
+# Copyright 2000 by Joshua Uziel <uzi@uzix.org> - version 1.6.1
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -31,7 +31,8 @@ $RCFILE = "$ENV{'HOME'}/.cgvgrc";
 
 # Default search list:
 # 	Make* *.c *.h *.s *.cc *.pl *.pm *.java *.*sh *.idl
-$SEARCH = '(^Make.*$|^.*\.([chslyC]|cc|p[lm]|java|.*sh|idl)$)';
+$SEARCH = '(^Make.*$|^.*\.([chslySC]|cc|p[lm]|java|.*sh|idl)$)';
+
 
 # List of files and strings to exclude from our search.
 $EXCLUDE = "SCCS|RCS|tags|\.make\.state";
@@ -49,6 +50,12 @@ $BOLD = 0;
 
 # Make every other line bold.
 $BOLD_ALTERNATE = 1;
+
+# Colon mode - prints file:number instead of spacing it out
+$COLON = 0;
+
+# Use the cg-built-in pager by default... 1 (yes) or 0 (no)
+$PAGER = 1;
 
 # Use the $EDITOR env. variable if it exists, else default to something.
 $EDITOR = $ENV{'EDITOR'} ? ($ENV{'EDITOR'}) : "vi";
@@ -76,9 +83,10 @@ $color[1] = 'cyan';
 $color[2] = 'blue';
 $color[3] = 'red';
 $color[4] = 'green';
+$color[5] = 'b_white';
 
 # Set b (bold) and c (color) values for printing
-for ($i=1; $i<=4; $i++) {
+for ($i=1; $i<=5; $i++) {
 	$c[$i] = $colors{$color[$i]};
 	$b[$i] = ($color[$i] =~ /^b_/) ? 1 : 0; 
 }
@@ -106,6 +114,10 @@ sub parse_rcfile {
 				$AGE=$value;
 			} elsif ($key =~ /^BOLD_ALTERNATE$/) {
 				$BOLD_ALTERNATE=$value;
+			} elsif ($key =~ /^COLON$/) {
+				$COLON=$value;
+ 			} elsif ($key =~ /^PAGER$/) {
+ 			         $PAGER=$value;
 			} elsif ($key =~ /^EDITOR$/) {
 				$EDITOR=$value;
 			} elsif ($key =~ /^EXCLUDE$/) {
@@ -114,12 +126,12 @@ sub parse_rcfile {
 				$SEARCH=$value;
 
 			# Change colors from the defaults.
-			} elsif ($key =~ /^COLOR[1-4]$/) {
+			} elsif ($key =~ /^COLOR[1-5]$/) {
 
 				# See that a legal color has been given
 				if ($value =~ 
 /^(black|red|green|yellow|blue|magenta|cyan|white|\
-|b_black|b_red| b_green|b_yellow|b_blue|b_magenta|b_cyan|b_white)$/) {
+|b_black|b_red|b_green|b_yellow|b_blue|b_magenta|b_cyan|b_white)$/) {
 					$coltmp = $key;
 					$coltmp =~ s/COLOR//;
 					$c[$coltmp] = $colors{$value};

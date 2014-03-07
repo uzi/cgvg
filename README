@@ -1,6 +1,12 @@
 Code Grep and Vi Grepped
 cg, vg - tools for finding and modifying on keywords
-Joshua Uziel <juziel@home.com> - November 3, 1999 - version 1.6.0
+Joshua Uziel <uzi@uzix.org> - August 29, 2000 - version 1.6.1
+
+[Note: the below is historical... SCO released cscope under a BSD
+license several months ago (http://cscope.sourceforge.net/), which
+I also work on.  This doesn't mean cgvg isn't useful anymore... I
+personally still use it, and I'm happy to have it... maybe you'll
+find use in it as well.]
 
 All too often I need to dig through source code.  Where something
 is defined, used, what files, etc.  There's a great tool for doing
@@ -44,6 +50,11 @@ matter) are recommended because otherwise the shell expands it before it
 gets to perl, so the search would not be recursive.  It of course works
 like this as well.  This script also supports coloring and bolding options
 which are both hardcoded and customizable per-user with a ~/.cgvgrc file.
+
+Also among "cg"'s capabilities is a "colon mode" for printing
+as well as a built-in pager.  The pager allows for colors while
+paging (that "more" or "less" can't deal with), as well as allowing
+one to go back or launch an editor directly using our other script...
 
 The other script is called "vg" and opens an editor on what has been 
 grepped (most editors work).  So remember that count?  All you

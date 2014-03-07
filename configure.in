@@ -5,7 +5,7 @@ dnl GNU Autoconf file
 
 AC_INIT(cg.in)
 
-AM_INIT_AUTOMAKE(cgvg, 1.6.0)
+AM_INIT_AUTOMAKE(cgvg, 1.6.1)
 
 AC_PATH_PROGS(PERL, perl5 perl perl5.005 perl5.004, "")
 if test -z "$PERL"; then

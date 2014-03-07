@@ -1,7 +1,7 @@
 #!@PERL@
 #
 # cg - Code Grep - grep recursively through files and disiplay matches
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version @VERSION@
+# Copyright 2000 by Joshua Uziel <uzi@uzix.org> - version @VERSION@
 #
 # usage: cg [-i] [pattern] [files]
 #
@@ -45,7 +45,7 @@ require "find.pl";
 use File::Basename;
 
 BEGIN { $prefix = "@prefix@" }
-use lib "@datadir@/cgvg";
+use lib dirname($0), "@datadir@/cgvg";
 require 'cgvg-common.pl';
 
 # Check if stdout goes to a tty... can't do colors if we pipe to another
@@ -60,6 +60,11 @@ unless (-d $LOGDIR) {
 
 &log_cleanup;
 &parse_rcfile;
+
+# Set up our internal pager
+$Promptname = $0;
+$Promptname =~ s/(.*\/)//;
+$VG = "$1\vg";  # path to vg
 
 # Parse the command-line.
 if ($#ARGV+1) {
@@ -96,26 +101,9 @@ if ($#ARGV+1) {
 				unless (-r $FILELIST[0]);
 			$nondash++;	# Psych out the $nondash check later.
 		} else {
-
-# Work is being done here to replace the 3 lines below with some searching
-# expressions that work "the right way", rather than a psuedo-Perl regexp way.
-# Changing the line in sub wanted would also help...
-#
-#			# Shell glob to regex conversion
-#			my %patmap = (
-#				'*' => '.*',
-#				'?' => '.',
-#				'[' => '[',
-#				']' => ']'
-#			);
-#
-#			$SEARCH = $FILELIST[0];
-#			$SEARCH =~ s{(.)} { $patmap{$1} || "\Q$1" }ge;
-#			$SEARCH = '^' . $SEARCH . '$';
-
 			$SEARCH = $FILELIST[0];
-			$SEARCH =~ s/\./\\\./g;         # . --> \.
-			$SEARCH =~ s/\*/\.\*/g;         # * --> .*
+			$SEARCH =~ s/\./\\\./g;		# . --> \.
+			$SEARCH =~ s/\*/\.\*/g;		# * --> .*
 		}
 	}
 
@@ -130,7 +118,13 @@ if ($#ARGV+1) {
 			# We can't have more than -l alone.
 			die "error: Bad argument(s).\n" if ($#ARGV > 0);
 			$uselast = 1;	# implied $generate = 0;
-		} else {
+		} elsif (/^\-p$/) {
+			$PAGER = !$PAGER;
+			$generate = 0 if ($nondash < 0);
+		} elsif (/^\-P$/) {
+			$PAGER = 0;
+			$generate = 0 if ($nondash < 0);
+       		} else {
 			die "error: Bad argument(s).\n";
 		}
 	}
@@ -158,7 +152,7 @@ if ($generate) {
 # differently from how it's stored to make it easier on the human eyes.
 
 # Get the number of screen columns.
-&get_number_of_columns;
+&get_number_of_columns_rows;
 
 # We have the -l option.
 $LOGFILE = $LASTLOG if ($uselast);
@@ -209,29 +203,40 @@ sub log_cleanup {
 
 #
 # Get the number of columns our terminal has, or default to 78 (or 80 - 2)
-#
-sub get_number_of_columns {
-# Attempt to get the number of columns from an "stty -a"
-	if ($COL = `stty -a | grep column 2> /dev/null`) {
+# Also get the number of rows our terminal has, or default to 23 (or 25 - 2)
+sub get_number_of_columns_rows {
+# Attempt to get the number of columns & rows from an "stty -a"
+	if (@TMP = `stty -a 2> /dev/null`) {
 
 		# Strip out the value with the string "column"
-		@TMP = split ';', $COL;
 		foreach $tmp (@TMP) {
-			$COL = $tmp if ($tmp =~ /column/);
+			my @SCR = split ';', $tmp;
+			foreach my $scr (@SCR) {
+				$COL = $scr if ($scr =~ /column/);
+				$ROW = $scr if ($scr =~ /rows/);
+			}
 		}
 		# Grab the digit characters surrounded by non-digit characters.
 		$COL =~ s/\D*(\d+)\D*/$1/;
+		$ROW =~ s/\D*(\d+)\D*/$1/;
 
-		# Something's weird if 0, and we want more than 40.
+		# For Cols, Something's weird if 0, and we want more than 40.
 		die "Error: Zero value found for number of columns.\n" 
 			if ($COL == 0);
 		die "Error: Too few columns to work with.\n" if ($COL < 40);
 
-		# Adjust things to be a little smaller than the width.
+		# For Rows, Something's weird if 0, and we want more than 4.
+		die "Error: Zero value found for number of rows.\n" 
+			if ($ROW == 0);
+		die "Error: Too few rows to work with.\n" if ($ROW < 4);
+
+		# Adjust things to be a little smaller than the size.
 		$COL -= 2;
+		$ROW -= 2;
 	} else {
-		# Default assumption is 80 columns, so do 2 less than it.
+		# Default assumption is 80 columns/25 rows, so do 2 less than it.
 		$COL = 78;
+		$ROW = 23;
 	}
 }
 
@@ -248,8 +253,7 @@ sub wanted {
 		$name =~ s/^\.\///;
 
 		# Push onto the list if we have a match
-#		push @LIST, $name if ($name =~ /$SEARCH/o);
-		push @LIST, $name if ($name =~ /^$SEARCH$/o);
+		push @LIST, $name if ($name =~ /$SEARCH/o);
 	}
 }
 
@@ -339,10 +343,17 @@ sub read_log {
 		$rec[$i]->{str} =~ s/\t/        /g;
 		
 		# If we have a longer length for this field, save it. 
-		$tmp = length $rec[$i]->{file};
-		$mfile = $tmp if ($mfile < $tmp);
-		$tmp = length $rec[$i]->{line};
-		$mline = $tmp if ($mline < $tmp);
+		if ($COLON) {
+			# Store it as filename length in colon mode
+			$tmp = length $rec[$i]->{file};
+			$tmp += length $rec[$i]->{line};
+			$mfile = $tmp if ($mfile < $tmp);
+		} else {
+			$tmp = length $rec[$i]->{file};
+			$mfile = $tmp if ($mfile < $tmp);
+			$tmp = length $rec[$i]->{line};
+			$mline = $tmp if ($mline < $tmp);
+		}
 
 		$i++;
 	}
@@ -350,6 +361,9 @@ sub read_log {
 
 	# Better than doing this every time like $mfile and $line ...
 	$mnum = length ($i-1);
+
+	# Spacing for line is factored into $mfile for colon mode.
+	$mline = 0 if ($COLON);
 }
 
 #
@@ -374,6 +388,9 @@ sub display_read_log {
 
 	$entries = $i;
 
+	$lines = 0;
+	@lasti = ();
+
 	for ($i=0; $i < $entries; $i++) {
 
 		# Print the properly justified first 3 fields.
@@ -381,16 +398,34 @@ sub display_read_log {
 		printf "%${mnum}s ", $rec[$i]->{num};  
 		print "\e[0m" if ($COLORS);
 
-		print "\e[$b[2];${c[2]}m" if ($COLORS);
-		printf "%-${mfile}s ", $rec[$i]->{file}; 
-		print "\e[0m" if ($COLORS);
-		
-		print "\e[$b[3];${c[3]}m" if ($COLORS);
-		printf "%${mline}s ", $rec[$i]->{line};
-		print "\e[0m" if ($COLORS);
+		if ($COLON) {
+			print "\e[$b[2];${c[2]}m" if ($COLORS);
+			printf "%s", $rec[$i]->{file}; 
+			print "\e[0m" if ($COLORS);
+			
+			print ":";
+			
+			print "\e[$b[3];${c[3]}m" if ($COLORS);
+			printf "%s ", $rec[$i]->{line};
+			print "\e[0m" if ($COLORS);
+
+			# colon mode num of spaces to print
+			$colnumsp = ($mfile - ((length $rec[$i]->{file})
+					 + (length $rec[$i]->{line})));
+			print " " x $colnumsp;
+		} else {
+			print "\e[$b[2];${c[2]}m" if ($COLORS);
+			printf "%-${mfile}s ", $rec[$i]->{file}; 
+			print "\e[0m" if ($COLORS);
+			
+			print "\e[$b[3];${c[3]}m" if ($COLORS);
+			printf "%${mline}s ", $rec[$i]->{line};
+			print "\e[0m" if ($COLORS);
+		}
 
 		# Newline only for "wrapmode".
 		print "\n" if ($wrapmode);
+		$lines++ if ($wrapmode);
 
 		# Trickery for the string.  Do this as many times as we've got
 		# str's length divided by it's maximum possible length.
@@ -404,10 +439,72 @@ sub display_read_log {
 			print substr $rec[$i]->{str}, ($j*$mstr), $mstr;
 			print "\e[0m" if ($COLORS);
 			print "\n";
+			$lines++;
+		}
+
+		# Pager control, if enabled
+	        $firsti = $i if !defined $firsti;
+		if ($PAGER && (($lines > $ROW) || ($i >= $entries-1))) {
+
+			# put newlines to fit the screen if the last screenful
+			if ($i >= $entries-1) {
+				print "\n" x ($ROW-$lines+1);
+			}
+			exit(0) if (!defined ($adjust =
+				do_pager(100*$i/$entries)));
+			if ($adjust < 0) {
+				$i = $firsti = pop @lasti;
+			}
+			else {
+				$i = $firsti if ($adjust == 0);
+				if ($adjust > 0) {
+					# Exit if we go beyond the last screen.
+					exit(0) if ($i >= $entries-1);
+					push @lasti, $firsti;
+				}
+				undef $firsti;
+			}
+			$i--;	# Make up for the for() loop incrementing $i
+			$lines = 0;
 		}
 
 		# Bold every other entry if BOLD_ALTERNATE
 		@b[1,2,3,4] = (($b[1]+1)%2, ($b[2]+1)%2, ($b[3]+1)%2,
 			($b[4]+1)%2) if ($BOLD_ALTERNATE);
+	}
+}
+
+# We've printed a screenful, pause and let user decide what to do
+#  Returns:  undef if user requests a quit
+#            > 0   if user wants next screenful displayed
+#            = 0   if user wants this screen re-displayed
+#            < 0   if user wants previous screenful displayed
+sub do_pager() {
+	my $Percent = shift;
+	my $Command, $Input, @Keys;
+
+	print "\e[$b[5];${c[5]}m" if ($COLORS);
+	print "[$Promptname";
+	printf " - %.0f%%", $Percent if ($Percent > 0);
+	print "]? ";
+	print "\e[0m" if ($COLORS);
+
+	$Input = <STDIN>;
+	# Clean up input (remove leading and trailing whitespace)
+	#   and get command character
+	chop $Input;
+	@Keys = split(/\s+/, $Input);
+	do { $Command = shift @Keys; } while ((defined $Command) and !$Command);
+
+	return 1 if !$Command;            # <Return> pressed, display next page
+	return 1 if ($Command eq "v");
+	return undef if (($Command eq "q") | ($Command eq "Q"));
+	return -1 if (($Command eq "-") | ($Command eq "b") |
+		($Command eq "p"));
+	return 0 if (($Command eq "l") | ($Command eq "'"));
+
+	# numbers entered; run vg
+	if ($Command =~ /^\d+$/) {
+		system "$VG $Command";
 	}
 }

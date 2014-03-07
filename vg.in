@@ -1,7 +1,7 @@
 #!@PERL@
 #
 # vg - Vi Grepped - edit a file at a line specified in a cg search.
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version @VERSION@
+# Copyright 2000 by Joshua Uziel <uzi@uzix.org> - version @VERSION@
 #
 # Usage: vg number
 #
@@ -31,16 +31,15 @@
 use File::Basename;
 
 BEGIN { $prefix = "@prefix@" }
-use lib "@datadir@/cgvg";
+use lib dirname($0), "@datadir@/cgvg";
 require 'cgvg-common.pl';
 
 &parse_rcfile;
 
 # We can't edit if the editor doesn't exist.
-my $editor_name= (split / /,$EDITOR)[0];
-`which $editor_name`;
+`which $EDITOR`;
 $no_editor = $?;
-die "Error: Editor $editor_name isn't in your path.\n" if ($no_editor);
+die "Error: Editor $EDITOR isn't in your path.\n" if ($no_editor);
 
 # One argument can be numerical only.
 if ($#ARGV == 0) {

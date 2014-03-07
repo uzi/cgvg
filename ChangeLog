@@ -1,6 +1,24 @@
 ----------------
 Change Log
 ----------------
+August 29, 2000
+1.6.1 - Pretty much added two things... 
+
+	* "Colon mode"... which prints out something like this:
+
+41 cgvg-common.pl:94  open (IN, "<$RCFILE");
+
+	  instead of this:
+
+41 cgvg-common.pl  94 open (IN, "<$RCFILE");
+	
+	  written on the request of a coworker who wanted it to mesh with
+	  his editor a bit better.
+
+	* Thanks to the good grace of Jeffrey R. Hay, cgvg now how has
+	  built-in pager so that colors will remain while paging and
+	  editing can occur while viewing the output.  Check it out. :)
+
 November 3, 1999
 1.6.0 - Some decent change to this version.
 	
