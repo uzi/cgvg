@@ -1,12 +1,19 @@
-#!/usr/bin/perl
 # cg - Code Grep - grep recursively through files and disiplay matches
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.4
+# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5
+#
+# usage: cg [-i] [pattern] [files]
 #
 # Recursive Grep script that does a bit of extra work in adding a count
-# field and storing the data in a file.  Run as if you were running
-# grep(1) normally, with only what to search for (and use the default
-# search path), or no arguments to recall last search.
-# Examples: "cg printf", "cg", "cg printf '*.c'", "cg -i printf '*.c'", etc.
+# field and storing the data in a file, as well as displaying data in a
+# colorful and human-readable fashion.  Run with a perl regular expression
+# to search for it (with '-i' option for case-insensitive).  You can supply
+# a quoted file pattern to search for ('*.c'), run just "cg" alone to
+# recall the last search (since it's save to the $LOGFILE), and running
+# with a list of files is allowable (though not recurive and pattern-matched
+# like the quoted variation).
+#
+# Examples: "cg printf", "cg printf '*.c'", "cg -i printf '*.c'",
+#		"cg -i printf *.c", "cg", etc.
 #
 # The point of this script was to provide source code searching
 # functionality similar to that AT&T's cscope(1).  This is a pure
@@ -49,7 +56,7 @@ sub wanted {
 		||
 		/^Make.*$/          # Make*
 		||
-		/^.*\.pl$/          # *.pl
+		/^.*\.p[lm]$/       # *.pl and *.pm
 		||
 		/^.*\.java$/        # *.java
 		||
@@ -63,18 +70,14 @@ sub wanted {
 			push @LIST, $name;
 		}
 	} else {
-		# Search files that match $SEARCH
-		if ( 
-
 		# Skip things that aren't normal files (like directories).
-		(($dev,$ino,$mode,$nlink,$uid,$gid) = lstat($_)) && -f _ &&
+		if ((($dev,$ino,$mode,$nlink,$uid,$gid) = lstat($_)) && -f _) {
 
-		# User-definable search...
-		/^$SEARCH$/
-		) {
 			# Kill the leading ./ and push it on the @LIST
 			$name =~ s/^\.\///;
-			push @LIST, $name;
+
+			# Push onto the list if we have a match
+			push @LIST, $name if ($name =~ /$SEARCH/);
 		}
 	}
 }
@@ -85,8 +88,8 @@ $LOGFILE = "$ENV{'HOME'}/.cglast";
 # Path to the rc file
 $RCFILE = "$ENV{'HOME'}/.cgvgrc";
 
-# List of things to exclude from the search
-$EXCLUDE = "SCCS|RCS|tags|\.make\.state|Binary\ file";
+# List of files and strings to exclude from our search.
+$EXCLUDE = "SCCS|RCS|tags|\.make\.state";
 
 # Set if you want colors (and your term supports it).  This is required
 # for the $BOLD* options.
@@ -109,11 +112,11 @@ $BOLD_ALTERNATE = 1;
 	    'cyan'	=> "36",
 	    'white'	=> "37");
 
-# Color for column #
-$c1 = $colors{'cyan'};
-$c2 = $colors{'blue'};
-$c3 = $colors{'red'};
-$c4 = $colors{'green'};
+# Default color for column #
+$c[1] = $colors{'cyan'};
+$c[2] = $colors{'blue'};
+$c[3] = $colors{'red'};
+$c[4] = $colors{'green'};
 
 # Check if stdout goes to a tty... can't do colors if we pipe to another
 # program like "more" or "less" or to a file.
@@ -127,77 +130,125 @@ if (-f $RCFILE) {
 		chomp;
 		
 		# Strip leading spaces and skip blank and comment lines.
-		s/^\s*//;
+		s/\s*//g;
 		next if (/^#/);
 		next if (/^$/);
 		
 		($key, $value) = split /=/;
 
-		if ($key =~ /COLORS/) {
+		# Match only the specific value.
+		if ($key =~ /^COLORS$/) {
 			$COLORS=$value;
-		} elsif ($key =~ /BOLD$/) {
+		} elsif ($key =~ /^BOLD$/) {
 			$BOLD=$value;
-		} elsif ($key =~ /BOLD_ALTERNATE/) {
+		} elsif ($key =~ /^BOLD_ALTERNATE$/) {
 			$BOLD_ALTERNATE=$value;
-		} elsif ($key =~ /EDITOR/) {
+		} elsif ($key =~ /^EDITOR$/) {
 			$EDITOR=$value;
+
+		# Change colors from the defaults.
+		} elsif ($key =~ /^COLOR[1-4]$/) {
+
+			# See that a legal color has been given
+			if ($value =~ 
+			/^(black|red|green|yellow|blue|magenta|cyan|white)$/) {
+				$coltmp = $key;
+				$coltmp =~ s/COLOR//;
+				$c[$coltmp] = $colors{$value};
+			} else {
+				die "error: Unknown color '$value' in $RCFILE",
+					"at line $..\n";
+			}
 		} else {
-			die "error: Unknown option in $RCFILE\n";
+			die "error: Unknown option '$key' in $RCFILE at line",
+				"$..\n";
 		}
 	}
 
 	close (IN);
 }
 
-# Generate the log if an argument, and (using $count) add another field
-# to grep's output.
+# Generate the log ...
 if ($#ARGV+1) {
 	$count = 0;
 	open (OUT, ">$LOGFILE");
 
 	# Give a point of reference if we change directories.
-	print OUT "PWD=",`pwd`;
+	print OUT "PWD=$ENV{PWD}\n";
 
-	# Set @ARG's for grep and the file $SEARCH (if any) while counting
+	# Set the @ARGLIST and the file $SEARCH (if any) while counting
 	# non-dash arguments.  More than one means we have a $SEARCH, else
 	# we use the default list of files to search through.
 	$nondash = 0;
 	foreach (@ARGV) {
 		if (/^-/) {
-			push @ARG, $_;
+			push @ARGLIST, $_;
 		} else {
 			if ($nondash) {
-				$SEARCH = $_;
-				$SEARCH =~ s/\./\\\./g;	# . for \.
-				$SEARCH =~ s/\*/\.\*/g;	# * for .*
+				push @FILELIST, $_;
 			} else {
-				push @ARG, $_;
+				$pattern = $_
 			}
 			$nondash++;
 		}
 	}
 	$nondash--;
 
-	die "error: You should quote search globs (like '*.c').\n"
-		if ($nondash >= 2);
+	# If we have a file list of size 1, use it as a search pattern
+	# for files automatically.
+	if ($nondash == 1) {
+		$SEARCH = $FILELIST[0];
+		$SEARCH =~ s/\./\\\./g;		# . --> \.
+		$SEARCH =~ s/\*/\.\*/g;		# * --> .*
+	}
 
-	# Initialize @LIST so it's now global and do the find...
-	@LIST;
-	&find('.');
+	# Check our arguments
+	$insensitive = 0;
+	foreach (@ARGLIST) {
+		if (/^\-i$/) {
+			$insensitive = 1;
+		} else {
+			die "error: Unknown argument.\n";
+		}
+	}
+
+	# Adding "(?i)" to the head makes it case-insensitive
+	# (aka. data-driven case insensitivity)
+	if ($insensitive) {
+		$pattern = "(?i)" . $pattern;
+	}
+
+	# Use the given list of files if more than 2 given by the shell,
+	# else to a recursive find, matching on the default or given pattern.
+	if ($nondash >= 2) {
+		@LIST = @FILELIST;
+	} else {
+		# Initialize @LIST so it's now global and do the find...
+		@LIST;
+		&find('.');
+	}
+
+	# Remove files found in our $EXCLUDE list
+	@LIST = grep !/$EXCLUDE/, @LIST;
 
 	# Special case of no matching files, we die with an error.
 	die "error: No matching files found.\n" if ($#LIST <= 0);
 
-	# Grep for it in our list, allowing arguments to grep, and
-	# adding the extra count field.  Note we also search /dev/null.
-	# This is so if we have one real arg, grep will think we have
-	# two to trick it into always giving us the filename.
-	foreach (`fgrep -n @ARG @LIST /dev/null | \
-					egrep -v "$EXCLUDE"`) {
-		print OUT "$count:$_";
-		$count++;
-	}
+	# Search through the list of files and generate the $LOGFILE
+	foreach $file (@LIST) {
+		# Only open text files (-T) that we can read (-r).
+		open(IN, "<$file") if ((-T $file) && (-r $file));
 
+		while (<IN>) {
+			# Search for the pattern (o == only compile once)
+			if (/$pattern/o) {
+				# $. is the line number and $_ is the entry
+				print OUT "$count:$file:$.:$_";
+				$count++;
+			}
+		}
+		close (IN);
+	}
 	close (OUT);
 }
 
@@ -205,13 +256,14 @@ if ($#ARGV+1) {
 # differently from how it's stored to make it easier on the human eyes.
 
 # Attempt to get the number of columns from an "stty -a"
-if ($COL = `stty -a | grep column 2> /dev/null`) {
+if ($COL = `stty -a 2> /dev/null | grep column 2> /dev/null`) {
 
 	# Strip out the value with the string "column"
 	@TMP = split ';', $COL;
 	foreach $tmp (@TMP) {
 		$COL = $tmp if ($tmp =~ /column/);
 	}
+	# Grab the digit characters surrounded by non-digit characters.
 	$COL =~ s/\D*(\d+)\D*/$1/;
 
 	# Something's weird if 0, and we want more than 40.
@@ -282,15 +334,15 @@ for ($i=0; $i < $entries; $i++) {
 	$BOLD = ($i % 2) if ($BOLD_ALTERNATE);
 	
 	# Print the properly justified first 3 fields.
-	print "\e[$BOLD;${c1}m" if ($COLORS);
+	print "\e[$BOLD;${c[1]}m" if ($COLORS);
 	printf "%${mnum}s ", $rec[$i]->{num};  
 	print "\e[0m" if ($COLORS);
 
-	print "\e[$BOLD;${c2}m" if ($COLORS);
+	print "\e[$BOLD;${c[2]}m" if ($COLORS);
 	printf "%-${mfile}s ", $rec[$i]->{file}; 
 	print "\e[0m" if ($COLORS);
 	
-	print "\e[$BOLD;${c3}m" if ($COLORS);
+	print "\e[$BOLD;${c[3]}m" if ($COLORS);
 	printf "%${mline}s ", $rec[$i]->{line};
 	print "\e[0m" if ($COLORS);
 
@@ -305,7 +357,7 @@ for ($i=0; $i < $entries; $i++) {
 		print " " x $skip if ($j || $wrapmode);
 
 		# Print only $mstr character substring.
-		print "\e[$BOLD;${c4}m" if ($COLORS);
+		print "\e[$BOLD;${c[4]}m" if ($COLORS);
 		print substr $rec[$i]->{str}, ($j*$mstr), $mstr;
 		print "\e[0m" if ($COLORS);
 		print "\n";

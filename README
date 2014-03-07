@@ -1,6 +1,6 @@
 Code Grep and Vi Grepped
 cg, vg - tools for finding and modifying on keywords
-Joshua Uziel <juziel@home.com> - August 15, 1999 - version 1.4
+Joshua Uziel <juziel@home.com> - August 18, 1999 - version 1.5
 
 All too often I need to dig through source code.  Where something
 is defined, used, what files, etc.  There's a great tool for doing
@@ -14,8 +14,9 @@ instead want to see who and what use that function.
 
 So, as a quick hack, mostly for myself, I started writing up some 
 perl scripts (I consciously chose perl, but considered other 
-languages first).  One script, "cg", makes use of find and grep.
-Run it like so:
+languages first).  One script, "cg", does the equivalent of a find
+and grep, storing matches and then displaying it in a human-friendly
+manner.  Run it like so:
 
 [11:14pm] tux:/usr/src/linux/fs> cg ext2_permission
 0 ext2/acl.c   22 * ext2_permission ()
@@ -31,19 +32,18 @@ do is type "cg" to view it again.  Also stored in the first line is
 the pwd of where your inquiry was run from, so you that won't have
 to be there to do the second half of this kit.
 
-There are several ways of running "cg".  Again, "cg" alone recalls
-the last search.  You can also run it like "cg pattern", and it'll
-search recursively for all default patterns.  To that, you can add
-some of grep(1)'s arguments like "-i" for case insensitive like
-"cg -i pattern".  If you don't want to use the default searching,
-you can specify where to search and run like grep(1).  For example,
-running "cg pattern '*.c'" will check all .c files recursively.
-If you want to search all files, you can use "cg pattern '*'".
-Note that the quotes (single or double, it doesn't matter) are 
-required because otherwise the shell expands it before it gets to
-perl -- something we don't want.  This script also supports coloring
-and bolding options which are both hardcoded and customizable per-user
-with a ~/.cgvgrc file.
+There are several ways of running "cg".  Again, "cg" alone recalls the
+last search.  You can also run it like "cg pattern", and it'll search
+recursively for all default patterns.  To that, you can add arguments
+like "-i" for case insensitive like "cg -i pattern".  If you don't want
+to use the default searching, you can specify where to search and run
+like grep(1).  For example, running "cg pattern '*.c'" will check all .c
+files recursively.  If you want to search all files, you can use "cg
+pattern '*'".  Note that the quotes (single or double, it doesn't
+matter) are recommended because otherwise the shell expands it before it
+gets to perl, so the search would not be recursive.  It of course works
+like this as well.  This script also supports coloring and bolding options
+which are both hardcoded and customizable per-user with a ~/.cgvgrc file.
 
 The other script is called "vg" and opens an editor on what has been 
 grepped (most editors work).  So remember that count?  All you
@@ -70,6 +70,28 @@ of time.  Feel free to send me comments or suggestions...
 ----------------
 REVISION HISTORY
 ----------------
+August 18, 1999
+1.5 -	The big change of this version is that now the searching is
+	handled by Perl rather than by grep(1), egrep(1) and fgrep(1).
+	This required quite a bit of change, but everything is working
+	like it was before.  The only really desirable option beyond
+	the '-n' option (which I've covered) was '-i', which is
+	covered as the only option at the moment.  The only things
+	that are not handled by Perl now and are hard-coded now are
+	"stty" and "which", and when I find a clean way of implementing
+	them without requiring a trip to CPAN, I'll add those as well.
+
+	Bugs have been fixed with handling the configuration file,
+	and with the user-specified search list.  Now a user can
+	search (for example) all C files with "cg pattern *.c" or
+	"cg pattern '*.c'"... with the former being expanded by the
+	shell and the latter being pattern matched by Perl.  Also
+	note that the latter is a recursive search whereas the former
+	is only those files specified on the command-line.  Colors
+	are also now configurable by the configuration file.
+
+	Manpages and a Makefile have also been added for user convenience.
+
 August 15, 1999
 1.4 -	Updates made here fix a bug that not all of the search list
 	was being utilized, and the biggest change being that cg

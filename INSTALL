@@ -1,0 +1,12 @@
+cgvg Installation Instructions
+==============================
+
+Installation is quick and painless... edit the Makefile and set
+the appropriate path to a Perl 5 interpreter with the "PERL"
+variable, and the proper "PREFIX" for the path where you'd like
+to install it.
+
+Type "make" to generate the "cg" and "vg" executables.  Type
+"make install" to copy the files to the appropriate places, or
+copy them by hand.
+

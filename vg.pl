@@ -1,6 +1,7 @@
-#!/usr/bin/perl
 # vg - Vi Grepped - edit a file at a line specified in a cg search.
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.4
+# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5
+#
+# Usage: vg number
 #
 # Helper script to go with cg for opening a editor conveniently
 # with the correct file and line as shown in cg's log.  Run this
@@ -43,23 +44,24 @@ if (-f $RCFILE) {
         while (<IN>) {
                 chomp;
 		
-		# Strip leading spaces and skip blank and comment lines.
+		# Strip spaces and skip blank and comment lines.
 		s/^\s*//;
 		next if (/^#/);
 		next if (/^$/);
 
                 ($key, $value) = split /=/;
 
-                if ($key =~ /COLORS/) {
-                        $COLORS=$value;
-                } elsif ($key =~ /BOLD$/) {
-                        $BOLD=$value;
-                } elsif ($key =~ /BOLD_ALTERNATE/) {
-                        $BOLD_ALTERNATE=$value;
-                } elsif ($key =~ /EDITOR/) {
+                if ($key =~ /^EDITOR$/) {
                         $EDITOR=$value;
+                } elsif ($key =~ /^BOLD$/) {
+                        next;
+                } elsif ($key =~ /^BOLD_ALTERNATE$/) {
+                        next;
+                } elsif ($key =~ /^COLOR[S1-4]$/) {
+                        next;
                 } else {
-                        die "error: Unknown option in $RCFILE\n";
+                        die "error: Unknown option '$key' in $RCFILE at line",
+				"$..\n";
                 }
         }
 
@@ -86,7 +88,7 @@ open (IN, "<$LOGFILE");
 
 # Check if our current path is the path when the log was taken.  If so,
 # then nullify $path, else set it to $path/ so we can use anywhere.
-$PWD=`pwd`;
+$PWD="$ENV{PWD}\n";
 $path=(split(/=/, <IN>))[1];
 if ($PWD eq $path) {
 	$path="";
