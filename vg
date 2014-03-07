@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vg - Vi Grepped - Copyright 1999 by Joshua Uziel <juziel@home.com>
 # This program is released under the GNU General Public License.
-# vg version 1.1
+# vg - cgvg version 1.2
 #
 # Helper script to go with cg for opening a vi session conveniently
 # with the correct file and line as shown in cg's log.  Run this
@@ -15,20 +15,22 @@
 # File where the log is.
 $LOGFILE = "$ENV{'HOME'}/.cglast";
 
+# Default editor to use.
+$EDITOR = "vi";
+
+# Use the $CDEDITOR environment variable if it exists.
+$EDITOR = $ENV{'CGEDITOR'} if ($ENV{'CGEDITOR'});
+
 # We need one argument only, and it has to be a number.
-unless ($#ARGV == 0) {
-	die "Error: Single argument needed.\n";
-}
+die "Error: Single argument needed.\n" unless ($#ARGV == 0);
 
 # Set it to $num and test that it is a number.
 $num = $ARGV[0];
-unless (($num =~ /\d+/) && ($num !~ /\D+/)) {
-	die "Error: Argument must be numerical.\n";
-}
 
-if (!-f $LOGFILE) {
-	die "Error: $LOGFILE doesn't exist.\n";
-}
+die "Error: Non-numerical argument.\n" 
+	unless (($num =~ /\d+/) && ($num !~ /\D+/));
+
+die "Error: $LOGFILE doesn't exist.\n" unless (-f $LOGFILE);
 
 open (IN, "<$LOGFILE");
 
@@ -39,17 +41,16 @@ $path=(split(/=/, <IN>))[1];
 if ($PWD eq $path) {
 	$path="";
 } else {
-	chop($path);
+	chomp($path);
 	$path="$path/";
 }
 
 # Find the line we want and open up vi to that line.
 foreach $line (<IN>) {
 	($this, $file, $line) = (split(/:/, $line))[0,1,2];
-	if ($num == $this) {
-		# Change this to execute vi or vim...
-		exec "vi +$line $path$file";
-	}
+
+	# Change this to execute vi or vim...
+	exec "$EDITOR +$line $path$file" if ($num == $this);
 }
 
 # If we're here, there was a problem.

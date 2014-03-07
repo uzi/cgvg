@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # cg - Code Grep - Copyright 1999 by Joshua Uziel <juziel@home.com>
 # This program is released under the GNU General Public License.
-# cg version 1.1
+# cg - cgvg version 1.2
 #
 # Recursive Grep script that does a bit of extra work in adding a count
 # field and storing the data in a file.  Run as if you were running
@@ -24,7 +24,7 @@ $EXCLUDE = "SCCS|RCS|tags|\.make\.state|Binary\ file";
 
 # List of things to search for... see the manpage for find(1).
 $SEARCH = "-name '*.[chs]' -o -name '*.cc' -o -name 'Make*' -o -name '*.pl' ",
-		"-o -name '*.java' -o -name '*.*sh'";
+		"-o -name '*.java' -o -name '*.*sh' -o -name '*.idl'";
 
 # Generate the log if an argument, and (using $count) add another field
 # to grep's output.
@@ -37,15 +37,13 @@ if ($#ARGV+1) {
 
 	$nondash = 0;
 	foreach (@ARGV) {
-		unless (/^-/) {
-			$nondash++;
-		}
+		$nondash++ unless (/^-/);
 		break if ($nondash >= 2);
 	}
 
 	if ($nondash >= 2) {
 
-		foreach (`grep -n @ARGV /dev/null | egrep -v "$EXCLUDE"`) {
+		foreach (`fgrep -n @ARGV /dev/null | egrep -v "$EXCLUDE"`) {
 			print OUT "$count:$_";
 			$count++;
 		}
@@ -72,7 +70,7 @@ if ($#ARGV+1) {
 		# adding the extra count field.  Note we also search /dev/null.
 		# This is so if we have one real arg, grep will think we have
 		# two to trick it into always giving us the filename.
-		foreach (`grep -n @ARGV @list /dev/null`) {
+		foreach (`fgrep -n @ARGV @list /dev/null`) {
 			print OUT "$count:$_";
 			$count++;
 		}
@@ -80,18 +78,100 @@ if ($#ARGV+1) {
 	close (OUT);
 }
 
-# Either way, we print the log... and skip the first line.
-if (-f "$LOGFILE") {
-	$count = 0;
-	open (IN, "<$LOGFILE");
+# Either way, we print the log... this part works to reformat things
+# differently from how it's stored to make it easier on the human eyes.
 
-	foreach (<IN>) {
-		if ($count) {
-			print;
-		}
-		$count++;
+# Attempt to get the number of columns from an "stty -a"
+if ($COL = `stty -a | grep column 2> /dev/null`) {
+
+	# Strip out the value with the string "column"
+	@TMP = split ';', $COL;
+	foreach $tmp (@TMP) {
+		$COL = $tmp if ($tmp =~ /column/);
 	}
-	close (IN);
+	$COL =~ s/\D*(\d+)\D*/$1/;
+
+	# Something's weird if 0, and we want more than 40.
+	die "Error: Zero value found for number of columns.\n" if ($COL == 0);
+	die "Error: Too few columns to work with.\n" if ($COL < 40);
+
+	# Adjust things to be a little smaller than the width.
+	$COL -= 2;
 } else {
-	die "Error: $LOGFILE does not exist.\n";
+	# Default assumption is 80 columns, so do 2 less than it.
+	$COL = 78;
 }
+
+# Exit there's no logfile.
+die "Error: $LOGFILE does not exist.\n" unless (-f "$LOGFILE");
+
+open (IN, "<$LOGFILE");
+<IN>;	# Waste the first line, used for PWD.
+
+# $m* are used as "max" variables... maximum length at this point.
+$mnum = $mline = $mfile = $i = 0;
+
+while ($in = <IN>) {
+	chomp $in;
+
+	# Split and strip the first few colons, leave the rest.
+	($rec[$i]->{num}, $rec[$i]->{file}, $rec[$i]->{line}, $rec[$i]->{str}) 
+		= split /:/, $in, 4;
+
+	# Remove all leading whitespace.
+	$rec[$i]->{str} =~ s/^\s*//;
+
+	# Swap tabs for 8 spaces
+	$rec[$i]->{str} =~ s/\t/        /g;
+	
+	# If we have a longer length for this field, save it. 
+	$tmp = length $rec[$i]->{file};
+	$mfile = $tmp if ($mfile < $tmp);
+	$tmp = length $rec[$i]->{line};
+	$mline = $tmp if ($mline < $tmp);
+
+	$i++;
+}
+
+# Better than doing this every time like $mfile and $line ...
+$mnum = length ($i-1);
+
+# Skip inward the 3 lengths and the spaces separating them.
+$skip = $mnum + $mfile + $mline + 3;
+
+# Special case I call "wrapmode" when we're to skip so much that we
+# can't even fit 20 characters (and in some cases negative characters).
+# Go to next line and automatically skip a tab's worth.
+if (($skip + 20) >= $COL) {
+	$wrapmode = 1;
+	$skip = 8;
+}
+
+# Length for the string is the whole line minus length of others.
+# Hopefully $COL is adjusted terminal's width.
+$mstr = $COL - $skip;
+
+$entries = $i;
+
+for ($i=0; $i < $entries; $i++) {
+	# Print the properly justified first 3 fields.
+	printf "%${mnum}s %-${mfile}s %${mline}s ", $rec[$i]->{num}, 
+					$rec[$i]->{file}, $rec[$i]->{line};
+
+	# Newline only for "wrapmode".
+	print "\n" if ($wrapmode);
+
+	# Trickery for the string.  Do this as many times as we've got
+	# str's length divided by it's maximum possible length.
+	for ($j=0; $j < ((length $rec[$i]->{str}) / $mstr); $j++) {
+
+		# Only skip after first line.
+		print " " x $skip if ($j || $wrapmode);
+
+		# Print only $mstr character substring.
+		print substr $rec[$i]->{str}, ($j*$mstr), $mstr;
+		print "\n";
+	}
+}
+
+close (IN);
