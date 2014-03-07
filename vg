@@ -1,7 +1,6 @@
 #!/usr/bin/perl
-# vg - Vi Grepped - Copyright 1999 by Joshua Uziel <juziel@home.com>
-# This program is released under the GNU General Public License.
-# vg - cgvg version 1.3
+# vg - Vi Grepped - edit a file at a line specified in a cg search.
+# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.4
 #
 # Helper script to go with cg for opening a editor conveniently
 # with the correct file and line as shown in cg's log.  Run this
@@ -10,15 +9,62 @@
 #
 # This script seems to work fine with a number of editors, including
 # vi, vim, emacs, pico, joe, etc.  (Despite it's name.)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 # File where the log is.
 $LOGFILE = "$ENV{'HOME'}/.cglast";
 
+# Path to the rc file
+$RCFILE = "$ENV{'HOME'}/.cgvgrc";
+
 # Default editor to use.
-$EDITOR = "vim";
+$EDITOR = "vi";
 
 # Use the $EDITOR environment variable if it exists.
 $EDITOR = $ENV{'EDITOR'} if ($ENV{'EDITOR'});
+
+# If the rc file exists, parse it and override the defaults.
+if (-f $RCFILE) {
+        open (IN, "<$RCFILE");
+
+        while (<IN>) {
+                chomp;
+		
+		# Strip leading spaces and skip blank and comment lines.
+		s/^\s*//;
+		next if (/^#/);
+		next if (/^$/);
+
+                ($key, $value) = split /=/;
+
+                if ($key =~ /COLORS/) {
+                        $COLORS=$value;
+                } elsif ($key =~ /BOLD$/) {
+                        $BOLD=$value;
+                } elsif ($key =~ /BOLD_ALTERNATE/) {
+                        $BOLD_ALTERNATE=$value;
+                } elsif ($key =~ /EDITOR/) {
+                        $EDITOR=$value;
+                } else {
+                        die "error: Unknown option in $RCFILE\n";
+                }
+        }
+
+        close (IN);
+}
 
 # We can't edit if the editor doesn't exist.
 `which $EDITOR`;

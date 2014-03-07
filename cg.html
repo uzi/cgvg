@@ -1,0 +1,324 @@
+<HTML>
+<HEAD>
+<TITLE>cg.html</TITLE>
+</HEAD>
+<BODY BGCOLOR=#e7e7e7>
+<PRE>
+<FONT COLOR=#a620f7>#!/usr/bin/perl</FONT>
+<FONT COLOR=#0000ff># cg - Code Grep - grep recursively through files and disiplay matches</FONT>
+<FONT COLOR=#0000ff># Copyright 1999 by Joshua Uziel &lt;juziel@home.com&gt; - version 1.4</FONT>
+<FONT COLOR=#0000ff>#</FONT>
+<FONT COLOR=#0000ff># Recursive Grep script that does a bit of extra work in adding a count</FONT>
+<FONT COLOR=#0000ff># field and storing the data in a file.  Run as if you were running</FONT>
+<FONT COLOR=#0000ff># grep(1) normally, with only what to search for (and use the default</FONT>
+<FONT COLOR=#0000ff># search path), or no arguments to recall last search.</FONT>
+<FONT COLOR=#0000ff># Examples: &quot;cg printf&quot;, &quot;cg&quot;, &quot;cg printf '*.c'&quot;, &quot;cg -i printf '*.c'&quot;, etc.</FONT>
+<FONT COLOR=#0000ff>#</FONT>
+<FONT COLOR=#0000ff># The point of this script was to provide source code searching</FONT>
+<FONT COLOR=#0000ff># functionality similar to that AT&amp;T's cscope(1).  This is a pure</FONT>
+<FONT COLOR=#0000ff># hack and lacks any sophistication, but has the advantage that it</FONT>
+<FONT COLOR=#0000ff># can be used for more than just the C programming language, besides</FONT>
+<FONT COLOR=#0000ff># adding the functionality that is generally missing from a developer's</FONT>
+<FONT COLOR=#0000ff># toolbox.</FONT>
+<FONT COLOR=#0000ff>#</FONT>
+<FONT COLOR=#0000ff># This program is free software; you can redistribute it and/or</FONT>
+<FONT COLOR=#0000ff># modify it under the terms of the GNU General Public License</FONT>
+<FONT COLOR=#0000ff># as published by the Free Software Foundation; either version 2</FONT>
+<FONT COLOR=#0000ff># of the License, or (at your option) any later version.</FONT>
+<FONT COLOR=#0000ff>#</FONT>
+<FONT COLOR=#0000ff># This program is distributed in the hope that it will be useful,</FONT>
+<FONT COLOR=#0000ff># but WITHOUT ANY WARRANTY; without even the implied warranty of</FONT>
+<FONT COLOR=#0000ff># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</FONT>
+<FONT COLOR=#0000ff># GNU General Public License for more details.</FONT>
+<FONT COLOR=#0000ff>#</FONT>
+<FONT COLOR=#0000ff># You should have received a copy of the GNU General Public License</FONT>
+<FONT COLOR=#0000ff># along with this program; if not, write to the Free Software</FONT>
+<FONT COLOR=#0000ff># Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.</FONT>
+
+<B><FONT COLOR=#a62828>use</FONT></B> POSIX;
+<B><FONT COLOR=#a62828>use</FONT></B> File::Find;
+<B><FONT COLOR=#a62828>require</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;find.pl&quot;</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># Search for wanted entries for perl internal find subroutine.</FONT>
+<FONT COLOR=#008a8e>sub wanted </FONT>{
+
+<FONT COLOR=#0000ff>	# If there isn't a specified thing to search for, use the default.</FONT>
+	<B><FONT COLOR=#a62828>unless</FONT></B> (<FONT COLOR=#008a8e>$nondash</FONT>) {
+		<B><FONT COLOR=#a62828>if</FONT></B> ( 
+
+	<FONT COLOR=#0000ff>	# Skip things that aren't normal files (like directories).</FONT>
+		((<FONT COLOR=#008a8e>$dev</FONT>,<FONT COLOR=#008a8e>$ino</FONT>,<FONT COLOR=#008a8e>$mode</FONT>,<FONT COLOR=#008a8e>$nlink</FONT>,<FONT COLOR=#008a8e>$uid</FONT>,<FONT COLOR=#008a8e>$gid</FONT>) = <B><FONT COLOR=#a62828>lstat</FONT></B>(<FONT COLOR=#008a8e>$_</FONT>)) &amp;&amp; -f _ &amp;&amp;
+
+		/^.*\.[chs]$/      <FONT COLOR=#0000ff> # *.c, *.h and *.s </FONT>
+		||
+		/^.*\.cc$/         <FONT COLOR=#0000ff> # *.cc</FONT>
+		||
+		/^Make.*$/         <FONT COLOR=#0000ff> # Make*</FONT>
+		||
+		/^.*\.pl$/         <FONT COLOR=#0000ff> # *.pl</FONT>
+		||
+		/^.*\.java$/       <FONT COLOR=#0000ff> # *.java</FONT>
+		||
+		/^.*\..*sh$/       <FONT COLOR=#0000ff> # *.*sh</FONT>
+		||
+		/^.*\.idl$/        <FONT COLOR=#0000ff> # *.idl</FONT>
+
+		) {
+		<FONT COLOR=#0000ff>	# Kill the leading ./ and push it on the @LIST</FONT>
+			<FONT COLOR=#008a8e>$name</FONT> =~ s/^\.\///;
+			<B><FONT COLOR=#a62828>push</FONT></B> <FONT COLOR=#008a8e>@LIST</FONT>, <FONT COLOR=#008a8e>$name</FONT>;
+		}
+	} <B><FONT COLOR=#a62828>else</FONT></B> {
+	<FONT COLOR=#0000ff>	# Search files that match $SEARCH</FONT>
+		<B><FONT COLOR=#a62828>if</FONT></B> ( 
+
+	<FONT COLOR=#0000ff>	# Skip things that aren't normal files (like directories).</FONT>
+		((<FONT COLOR=#008a8e>$dev</FONT>,<FONT COLOR=#008a8e>$ino</FONT>,<FONT COLOR=#008a8e>$mode</FONT>,<FONT COLOR=#008a8e>$nlink</FONT>,<FONT COLOR=#008a8e>$uid</FONT>,<FONT COLOR=#008a8e>$gid</FONT>) = <B><FONT COLOR=#a62828>lstat</FONT></B>(<FONT COLOR=#008a8e>$_</FONT>)) &amp;&amp; -f _ &amp;&amp;
+
+	<FONT COLOR=#0000ff>	# User-definable search...</FONT>
+		/^<FONT COLOR=#008a8e>$SEARCH</FONT>$/
+		) {
+		<FONT COLOR=#0000ff>	# Kill the leading ./ and push it on the @LIST</FONT>
+			<FONT COLOR=#008a8e>$name</FONT> =~ s/^\.\///;
+			<B><FONT COLOR=#a62828>push</FONT></B> <FONT COLOR=#008a8e>@LIST</FONT>, <FONT COLOR=#008a8e>$name</FONT>;
+		}
+	}
+}
+
+<FONT COLOR=#0000ff># Where to store the data</FONT>
+<FONT COLOR=#008a8e>$LOGFILE</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><FONT COLOR=#008a8e>$ENV</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>{'HOME'}/.cglast&quot;</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># Path to the rc file</FONT>
+<FONT COLOR=#008a8e>$RCFILE</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><FONT COLOR=#008a8e>$ENV</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>{'HOME'}/.cgvgrc&quot;</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># List of things to exclude from the search</FONT>
+<FONT COLOR=#008a8e>$EXCLUDE</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;SCCS|RCS|tags|</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\.</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>make</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\.</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>state|Binary</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\ </FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>file&quot;</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># Set if you want colors (and your term supports it).  This is required</FONT>
+<FONT COLOR=#0000ff># for the $BOLD* options.</FONT>
+<FONT COLOR=#008a8e>$COLORS</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>1</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># Have everything printed in bold... 1 (yes) or 0 (no) only.  This option</FONT>
+<FONT COLOR=#0000ff># is overrided by $BOLD_ALTERNATE and only available with $COLORS</FONT>
+<FONT COLOR=#008a8e>$BOLD</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># Make every other line bold.</FONT>
+<FONT COLOR=#008a8e>$BOLD_ALTERNATE</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>1</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># Defined colors</FONT>
+<FONT COLOR=#008a8e>%colors</FONT> = ( <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'black'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;30&quot;</FONT></SPAN>,
+	    <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'red'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;31&quot;</FONT></SPAN>,
+	    <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'green'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;32&quot;</FONT></SPAN>,
+	    <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'yellow'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;33&quot;</FONT></SPAN>,
+	    <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'blue'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;34&quot;</FONT></SPAN>,
+	    <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'magenta'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;35&quot;</FONT></SPAN>,
+	    <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'cyan'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;36&quot;</FONT></SPAN>,
+	    <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'white'</FONT></SPAN>	=&gt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;37&quot;</FONT></SPAN>);
+
+<FONT COLOR=#0000ff># Color for column #</FONT>
+<FONT COLOR=#008a8e>$c1</FONT> = <FONT COLOR=#008a8e>$colors</FONT>{<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'cyan'</FONT></SPAN>};
+<FONT COLOR=#008a8e>$c2</FONT> = <FONT COLOR=#008a8e>$colors</FONT>{<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'blue'</FONT></SPAN>};
+<FONT COLOR=#008a8e>$c3</FONT> = <FONT COLOR=#008a8e>$colors</FONT>{<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'red'</FONT></SPAN>};
+<FONT COLOR=#008a8e>$c4</FONT> = <FONT COLOR=#008a8e>$colors</FONT>{<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'green'</FONT></SPAN>};
+
+<FONT COLOR=#0000ff># Check if stdout goes to a tty... can't do colors if we pipe to another</FONT>
+<FONT COLOR=#0000ff># program like &quot;more&quot; or &quot;less&quot; or to a file.</FONT>
+<FONT COLOR=#008a8e>$COLORS</FONT> = POSIX::isatty(<B><FONT COLOR=#a62828>fileno</FONT></B> <B><FONT COLOR=#a62828>STDOUT</FONT></B>) <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+
+<FONT COLOR=#0000ff># If the rc file exists, parse it and override the defaults.</FONT>
+<B><FONT COLOR=#a62828>if</FONT></B> (-f <FONT COLOR=#008a8e>$RCFILE</FONT>) {
+	<B><FONT COLOR=#a62828>open</FONT></B> (IN, <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;&lt;</FONT></SPAN><FONT COLOR=#008a8e>$RCFILE</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>);
+	
+	<B><FONT COLOR=#a62828>while</FONT></B> (&lt;IN&gt;) {
+		<B><FONT COLOR=#a62828>chomp</FONT></B>;
+		
+	<FONT COLOR=#0000ff>	# Strip leading spaces and skip blank and comment lines.</FONT>
+		s/^\s*//;
+		<B><FONT COLOR=#a62828>next</FONT></B> <B><FONT COLOR=#a62828>if</FONT></B> (/^#/);
+		<B><FONT COLOR=#a62828>next</FONT></B> <B><FONT COLOR=#a62828>if</FONT></B> (/^$/);
+		
+		(<FONT COLOR=#008a8e>$key</FONT>, <FONT COLOR=#008a8e>$value</FONT>) = <B><FONT COLOR=#a62828>split</FONT></B> /=/;
+
+		<B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$key</FONT> =~ /COLORS/) {
+			<FONT COLOR=#008a8e>$COLORS</FONT>=<FONT COLOR=#008a8e>$value</FONT>;
+		} <B><FONT COLOR=#a62828>elsif</FONT></B> (<FONT COLOR=#008a8e>$key</FONT> =~ /BOLD$/) {
+			<FONT COLOR=#008a8e>$BOLD</FONT>=<FONT COLOR=#008a8e>$value</FONT>;
+		} <B><FONT COLOR=#a62828>elsif</FONT></B> (<FONT COLOR=#008a8e>$key</FONT> =~ /BOLD_ALTERNATE/) {
+			<FONT COLOR=#008a8e>$BOLD_ALTERNATE</FONT>=<FONT COLOR=#008a8e>$value</FONT>;
+		} <B><FONT COLOR=#a62828>elsif</FONT></B> (<FONT COLOR=#008a8e>$key</FONT> =~ /EDITOR/) {
+			<FONT COLOR=#008a8e>$EDITOR</FONT>=<FONT COLOR=#008a8e>$value</FONT>;
+		} <B><FONT COLOR=#a62828>else</FONT></B> {
+			<B><FONT COLOR=#a62828>die</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;error: Unknown option in </FONT></SPAN><FONT COLOR=#008a8e>$RCFILE</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>;
+		}
+	}
+
+	<B><FONT COLOR=#a62828>close</FONT></B> (IN);
+}
+
+<FONT COLOR=#0000ff># Generate the log if an argument, and (using $count) add another field</FONT>
+<FONT COLOR=#0000ff># to grep's output.</FONT>
+<B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$#ARGV</FONT>+<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>1</FONT></SPAN>) {
+	<FONT COLOR=#008a8e>$count</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>;
+	<B><FONT COLOR=#a62828>open</FONT></B> (OUT, <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;&gt;</FONT></SPAN><FONT COLOR=#008a8e>$LOGFILE</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>);
+
+<FONT COLOR=#0000ff>	# Give a point of reference if we change directories.</FONT>
+	<B><FONT COLOR=#a62828>print</FONT></B> OUT <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;PWD=&quot;</FONT></SPAN>,<SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>`pwd`</FONT></SPAN>;
+
+<FONT COLOR=#0000ff>	# Set @ARG's for grep and the file $SEARCH (if any) while counting</FONT>
+<FONT COLOR=#0000ff>	# non-dash arguments.  More than one means we have a $SEARCH, else</FONT>
+<FONT COLOR=#0000ff>	# we use the default list of files to search through.</FONT>
+	<FONT COLOR=#008a8e>$nondash</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>;
+	<B><FONT COLOR=#a62828>foreach</FONT></B> (<FONT COLOR=#008a8e>@ARGV</FONT>) {
+		<B><FONT COLOR=#a62828>if</FONT></B> (/^-/) {
+			<B><FONT COLOR=#a62828>push</FONT></B> <FONT COLOR=#008a8e>@ARG</FONT>, <FONT COLOR=#008a8e>$_</FONT>;
+		} <B><FONT COLOR=#a62828>else</FONT></B> {
+			<B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$nondash</FONT>) {
+				<FONT COLOR=#008a8e>$SEARCH</FONT> = <FONT COLOR=#008a8e>$_</FONT>;
+				<FONT COLOR=#008a8e>$SEARCH</FONT> =~ s/\./\\\./g;<FONT COLOR=#0000ff>	# . for \.</FONT>
+				<FONT COLOR=#008a8e>$SEARCH</FONT> =~ s/\*/\.\*/g;<FONT COLOR=#0000ff>	# * for .*</FONT>
+			} <B><FONT COLOR=#a62828>else</FONT></B> {
+				<B><FONT COLOR=#a62828>push</FONT></B> <FONT COLOR=#008a8e>@ARG</FONT>, <FONT COLOR=#008a8e>$_</FONT>;
+			}
+			<FONT COLOR=#008a8e>$nondash</FONT>++;
+		}
+	}
+	<FONT COLOR=#008a8e>$nondash</FONT>--;
+
+	<B><FONT COLOR=#a62828>die</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;error: You should quote search globs (like '*.c').</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>
+		<B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$nondash</FONT> &gt;= <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>2</FONT></SPAN>);
+
+<FONT COLOR=#0000ff>	# Initialize @LIST so it's now global and do the find...</FONT>
+	<FONT COLOR=#008a8e>@LIST</FONT>;
+	<FONT COLOR=#008a8e>&amp;find</FONT>(<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>'.'</FONT></SPAN>);
+
+<FONT COLOR=#0000ff>	# Special case of no matching files, we die with an error.</FONT>
+	<B><FONT COLOR=#a62828>die</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;error: No matching files found.</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$#LIST</FONT> &lt;= <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>);
+
+<FONT COLOR=#0000ff>	# Grep for it in our list, allowing arguments to grep, and</FONT>
+<FONT COLOR=#0000ff>	# adding the extra count field.  Note we also search /dev/null.</FONT>
+<FONT COLOR=#0000ff>	# This is so if we have one real arg, grep will think we have</FONT>
+<FONT COLOR=#0000ff>	# two to trick it into always giving us the filename.</FONT>
+	<B><FONT COLOR=#a62828>foreach</FONT></B> (<SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>`fgrep -n </FONT></SPAN><FONT COLOR=#008a8e>@ARG</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf> </FONT></SPAN><FONT COLOR=#008a8e>@LIST</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf> /dev/null | \</FONT></SPAN>
+<SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>					egrep -v &quot;</FONT></SPAN><FONT COLOR=#008a8e>$EXCLUDE</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>&quot;`</FONT></SPAN>) {
+		<B><FONT COLOR=#a62828>print</FONT></B> OUT <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><FONT COLOR=#008a8e>$count</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>:</FONT></SPAN><FONT COLOR=#008a8e>$_</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>;
+		<FONT COLOR=#008a8e>$count</FONT>++;
+	}
+
+	<B><FONT COLOR=#a62828>close</FONT></B> (OUT);
+}
+
+<FONT COLOR=#0000ff># Either way, we print the log... this part works to reformat things</FONT>
+<FONT COLOR=#0000ff># differently from how it's stored to make it easier on the human eyes.</FONT>
+
+<FONT COLOR=#0000ff># Attempt to get the number of columns from an &quot;stty -a&quot;</FONT>
+<B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COL</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>`stty -a | grep column 2&gt; /dev/null`</FONT></SPAN>) {
+
+<FONT COLOR=#0000ff>	# Strip out the value with the string &quot;column&quot;</FONT>
+	<FONT COLOR=#008a8e>@TMP</FONT> = <B><FONT COLOR=#a62828>split</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>';'</FONT></SPAN>, <FONT COLOR=#008a8e>$COL</FONT>;
+	<B><FONT COLOR=#a62828>foreach</FONT></B> <FONT COLOR=#008a8e>$tmp</FONT> (<FONT COLOR=#008a8e>@TMP</FONT>) {
+		<FONT COLOR=#008a8e>$COL</FONT> = <FONT COLOR=#008a8e>$tmp</FONT> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$tmp</FONT> =~ /column/);
+	}
+	<FONT COLOR=#008a8e>$COL</FONT> =~ s/\D*(\d+)\D*/<FONT COLOR=#008a8e>$1</FONT>/;
+
+<FONT COLOR=#0000ff>	# Something's weird if 0, and we want more than 40.</FONT>
+	<B><FONT COLOR=#a62828>die</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;Error: Zero value found for number of columns.</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COL</FONT> == <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>);
+	<B><FONT COLOR=#a62828>die</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;Error: Too few columns to work with.</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COL</FONT> &lt; <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>40</FONT></SPAN>);
+
+<FONT COLOR=#0000ff>	# Adjust things to be a little smaller than the width.</FONT>
+	<FONT COLOR=#008a8e>$COL</FONT> -= <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>2</FONT></SPAN>;
+} <B><FONT COLOR=#a62828>else</FONT></B> {
+<FONT COLOR=#0000ff>	# Default assumption is 80 columns, so do 2 less than it.</FONT>
+	<FONT COLOR=#008a8e>$COL</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>78</FONT></SPAN>;
+}
+
+<FONT COLOR=#0000ff># Exit there's no logfile.</FONT>
+<B><FONT COLOR=#a62828>die</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;Error: </FONT></SPAN><FONT COLOR=#008a8e>$LOGFILE</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff> does not exist.</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>unless</FONT></B> (-f <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><FONT COLOR=#008a8e>$LOGFILE</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>);
+
+<B><FONT COLOR=#a62828>open</FONT></B> (IN, <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;&lt;</FONT></SPAN><FONT COLOR=#008a8e>$LOGFILE</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>);
+&lt;IN&gt;;<FONT COLOR=#0000ff>	# Waste the first line, used for PWD.</FONT>
+
+<FONT COLOR=#0000ff># $m* are used as &quot;max&quot; variables... maximum length at this point.</FONT>
+<FONT COLOR=#008a8e>$mnum</FONT> = <FONT COLOR=#008a8e>$mline</FONT> = <FONT COLOR=#008a8e>$mfile</FONT> = <FONT COLOR=#008a8e>$i</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>;
+
+<B><FONT COLOR=#a62828>while</FONT></B> (<FONT COLOR=#008a8e>$in</FONT> = &lt;IN&gt;) {
+	<B><FONT COLOR=#a62828>chomp</FONT></B> <FONT COLOR=#008a8e>$in</FONT>;
+
+<FONT COLOR=#0000ff>	# Split and strip the first few colons, leave the rest.</FONT>
+	(<FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{num}, <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{file}, <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{line}, <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{str}) 
+		= <B><FONT COLOR=#a62828>split</FONT></B> /:/, <FONT COLOR=#008a8e>$in</FONT>, <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>4</FONT></SPAN>;
+
+<FONT COLOR=#0000ff>	# Remove all leading whitespace.</FONT>
+	<FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{str} =~ s/^\s*//;
+
+<FONT COLOR=#0000ff>	# Swap tabs for 8 spaces</FONT>
+	<FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{str} =~ s/\t/        /g;
+	
+<FONT COLOR=#0000ff>	# If we have a longer length for this field, save it. </FONT>
+	<FONT COLOR=#008a8e>$tmp</FONT> = <B><FONT COLOR=#a62828>length</FONT></B> <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{file};
+	<FONT COLOR=#008a8e>$mfile</FONT> = <FONT COLOR=#008a8e>$tmp</FONT> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$mfile</FONT> &lt; <FONT COLOR=#008a8e>$tmp</FONT>);
+	<FONT COLOR=#008a8e>$tmp</FONT> = <B><FONT COLOR=#a62828>length</FONT></B> <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{line};
+	<FONT COLOR=#008a8e>$mline</FONT> = <FONT COLOR=#008a8e>$tmp</FONT> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$mline</FONT> &lt; <FONT COLOR=#008a8e>$tmp</FONT>);
+
+	<FONT COLOR=#008a8e>$i</FONT>++;
+}
+
+<FONT COLOR=#0000ff># Better than doing this every time like $mfile and $line ...</FONT>
+<FONT COLOR=#008a8e>$mnum</FONT> = <B><FONT COLOR=#a62828>length</FONT></B> (<FONT COLOR=#008a8e>$i</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>-1</FONT></SPAN>);
+
+<FONT COLOR=#0000ff># Skip inward the 3 lengths and the spaces separating them.</FONT>
+<FONT COLOR=#008a8e>$skip</FONT> = <FONT COLOR=#008a8e>$mnum</FONT> + <FONT COLOR=#008a8e>$mfile</FONT> + <FONT COLOR=#008a8e>$mline</FONT> + <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>3</FONT></SPAN>;
+
+<FONT COLOR=#0000ff># Special case I call &quot;wrapmode&quot; when we're to skip so much that we</FONT>
+<FONT COLOR=#0000ff># can't even fit 20 characters (and in some cases negative characters).</FONT>
+<FONT COLOR=#0000ff># Go to next line and automatically skip a tab's worth.</FONT>
+<B><FONT COLOR=#a62828>if</FONT></B> ((<FONT COLOR=#008a8e>$skip</FONT> + <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>20</FONT></SPAN>) &gt;= <FONT COLOR=#008a8e>$COL</FONT>) {
+	<FONT COLOR=#008a8e>$wrapmode</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>1</FONT></SPAN>;
+	<FONT COLOR=#008a8e>$skip</FONT> = <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>8</FONT></SPAN>;
+}
+
+<FONT COLOR=#0000ff># Length for the string is the whole line minus length of others.</FONT>
+<FONT COLOR=#0000ff># Hopefully $COL is adjusted terminal's width.</FONT>
+<FONT COLOR=#008a8e>$mstr</FONT> = <FONT COLOR=#008a8e>$COL</FONT> - <FONT COLOR=#008a8e>$skip</FONT>;
+
+<FONT COLOR=#008a8e>$entries</FONT> = <FONT COLOR=#008a8e>$i</FONT>;
+
+<B><FONT COLOR=#a62828>for</FONT></B> (<FONT COLOR=#008a8e>$i</FONT>=<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>; <FONT COLOR=#008a8e>$i</FONT> &lt; <FONT COLOR=#008a8e>$entries</FONT>; <FONT COLOR=#008a8e>$i</FONT>++) {
+
+<FONT COLOR=#0000ff>	# Bold every other entry</FONT>
+	<FONT COLOR=#008a8e>$BOLD</FONT> = (<FONT COLOR=#008a8e>$i</FONT> % <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>2</FONT></SPAN>) <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$BOLD_ALTERNATE</FONT>);
+	
+<FONT COLOR=#0000ff>	# Print the properly justified first 3 fields.</FONT>
+	<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[</FONT></SPAN><FONT COLOR=#008a8e>$BOLD</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>;${c1}m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+	<B><FONT COLOR=#a62828>printf</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;%${mnum}s &quot;</FONT></SPAN>, <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{num};  
+	<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[0m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+
+	<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[</FONT></SPAN><FONT COLOR=#008a8e>$BOLD</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>;${c2}m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+	<B><FONT COLOR=#a62828>printf</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;%-${mfile}s &quot;</FONT></SPAN>, <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{file}; 
+	<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[0m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+	
+	<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[</FONT></SPAN><FONT COLOR=#008a8e>$BOLD</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>;${c3}m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+	<B><FONT COLOR=#a62828>printf</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;%${mline}s &quot;</FONT></SPAN>, <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{line};
+	<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[0m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+
+<FONT COLOR=#0000ff>	# Newline only for &quot;wrapmode&quot;.</FONT>
+	<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$wrapmode</FONT>);
+
+<FONT COLOR=#0000ff>	# Trickery for the string.  Do this as many times as we've got</FONT>
+<FONT COLOR=#0000ff>	# str's length divided by it's maximum possible length.</FONT>
+	<B><FONT COLOR=#a62828>for</FONT></B> (<FONT COLOR=#008a8e>$j</FONT>=<SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>0</FONT></SPAN>; <FONT COLOR=#008a8e>$j</FONT> &lt; ((<B><FONT COLOR=#a62828>length</FONT></B> <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{str}) / <FONT COLOR=#008a8e>$mstr</FONT>); <FONT COLOR=#008a8e>$j</FONT>++) {
+
+	<FONT COLOR=#0000ff>	# Only skip after first line.</FONT>
+<SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>		print &quot; &quot; x </FONT></SPAN><FONT COLOR=#008a8e>$skip</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf> if (</FONT></SPAN><FONT COLOR=#008a8e>$j</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf> || </FONT></SPAN><FONT COLOR=#008a8e>$wrapmode</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>);</FONT></SPAN>
+
+	<FONT COLOR=#0000ff>	# Print only $mstr character substring.</FONT>
+		<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[</FONT></SPAN><FONT COLOR=#008a8e>$BOLD</FONT><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>;${c4}m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+		<B><FONT COLOR=#a62828>print</FONT></B> <B><FONT COLOR=#a62828>substr</FONT></B> <FONT COLOR=#008a8e>$rec</FONT>[<FONT COLOR=#008a8e>$i</FONT>]-&gt;{str}, (<FONT COLOR=#008a8e>$j</FONT>*<FONT COLOR=#008a8e>$mstr</FONT>), <FONT COLOR=#008a8e>$mstr</FONT>;
+		<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\e</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>[0m&quot;</FONT></SPAN> <B><FONT COLOR=#a62828>if</FONT></B> (<FONT COLOR=#008a8e>$COLORS</FONT>);
+		<B><FONT COLOR=#a62828>print</FONT></B> <SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#6959cf>\n</FONT></SPAN><SPAN style="background-color: #f7f3f7"><FONT COLOR=#ff00ff>&quot;</FONT></SPAN>;
+	}
+}
+
+<B><FONT COLOR=#a62828>close</FONT></B> (IN);
+</PRE>
+</BODY>
+</HTML>

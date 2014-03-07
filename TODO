@@ -1,0 +1,14 @@
+These are desired features for the future... if you want to do any of
+these (since I'm busy at times and may not get to them for a while),
+please email me at juziel@home.com ...
+
+* Fix bugs involving using Perl's internal find... I don't think I'm
+  using it completely correctly at the moment, and I'm sure some things
+  need to be fixed about what I'm finding anyways.
+
+* Perhaps expand the .cgvgrc file's ability to also specify a per-user
+  default search path to use rather than all users having the same default.
+
+* Possibly modify things so that Perl's internal grep is used rather
+  than external "grep", "egrep" and "fgrep" and along with it have
+  the program have it's own arguments rather than sending them to grep.

@@ -1,6 +1,6 @@
 Code Grep and Vi Grepped
 cg, vg - tools for finding and modifying on keywords
-Joshua Uziel <juziel@home.com> - July 7, 1999 - version 1.3
+Joshua Uziel <juziel@home.com> - August 15, 1999 - version 1.4
 
 All too often I need to dig through source code.  Where something
 is defined, used, what files, etc.  There's a great tool for doing
@@ -37,11 +37,13 @@ search recursively for all default patterns.  To that, you can add
 some of grep(1)'s arguments like "-i" for case insensitive like
 "cg -i pattern".  If you don't want to use the default searching,
 you can specify where to search and run like grep(1).  For example,
-running "cg pattern *.c" will check all .c files, and if you have
-GNU grep v2.3 with the "-r" options, you can use it to search
-recursively with something like "cg -r pattern *.c".  Note that
-running it like this creates a significant amount of overhead, so
-it's advisable to use the default search patterns when you can.
+running "cg pattern '*.c'" will check all .c files recursively.
+If you want to search all files, you can use "cg pattern '*'".
+Note that the quotes (single or double, it doesn't matter) are 
+required because otherwise the shell expands it before it gets to
+perl -- something we don't want.  This script also supports coloring
+and bolding options which are both hardcoded and customizable per-user
+with a ~/.cgvgrc file.
 
 The other script is called "vg" and opens an editor on what has been 
 grepped (most editors work).  So remember that count?  All you
@@ -68,8 +70,25 @@ of time.  Feel free to send me comments or suggestions...
 ----------------
 REVISION HISTORY
 ----------------
+August 15, 1999
+1.4 -	Updates made here fix a bug that not all of the search list
+	was being utilized, and the biggest change being that cg
+	now uses Perl's internal File::Find routine instead of an
+	external /bin/find (or whatever) to get the list of files.
+
+	Syntax has changed a bit because of this... when files to
+	search are specified, it must be done in quotes (single or
+	double) like "cg pattern '*'" to search all files.
+
+	Also, there's now a ~/.cgvgrc file where users can specify
+	their editor, and bold and coloring options so that not all
+	system users have to use the default.  See the "cgvgrc_example"
+	file for a sample with the defaults.  Currently only $EDITOR,
+	$BOLD, $BOLD_ALTERNATE and $COLORS can be set.  A bug in
+	version 1.3 was corrected with the $BOLD option as well.
+
 July 7, 1999
-1.3	Same as the last version, except now colors are supported
+1.3 -	Same as the last version, except now colors are supported
 	in cg.  There are the options $BOLD, $BOLD_ALTERNATE and  
 	$COLOR to be set to 1 (on) or 0 (off) if you do or don't 
 	want these feature.  $COLOR is needed for the $BOLD
