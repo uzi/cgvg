@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # cg - Code Grep - Copyright 1999 by Joshua Uziel <juziel@home.com>
 # This program is released under the GNU General Public License.
-# cg - cgvg version 1.2
+# cg - cgvg version 1.3
 #
 # Recursive Grep script that does a bit of extra work in adding a count
 # field and storing the data in a file.  Run as if you were running
@@ -16,6 +16,8 @@
 # adding the functionality that is generally missing from a developer's
 # toolbox.
 
+use POSIX;
+
 # Where to store the data
 $LOGFILE = "$ENV{'HOME'}/.cglast";
 
@@ -25,6 +27,37 @@ $EXCLUDE = "SCCS|RCS|tags|\.make\.state|Binary\ file";
 # List of things to search for... see the manpage for find(1).
 $SEARCH = "-name '*.[chs]' -o -name '*.cc' -o -name 'Make*' -o -name '*.pl' ",
 		"-o -name '*.java' -o -name '*.*sh' -o -name '*.idl'";
+
+# Set if you want colors (and your term supports it).  This is required
+# for the $BOLD* options.
+$COLORS = 1;
+
+# Have everything printed in bold... 1 (yes) or 0 (no) only.  This option
+# is overrided by $BOLD_ALTERNATE
+$BOLD = 0;
+
+# Make every other line bold.
+$BOLD_ALTERNATE = 1;
+
+# Defined colors
+%colors = ( 'black'	=> "30",
+	    'red'	=> "31",
+	    'green'	=> "32",
+	    'yellow'	=> "33",
+	    'blue'	=> "34",
+	    'magenta'	=> "35",
+	    'cyan'	=> "36",
+	    'white'	=> "37");
+
+# Color for column #
+$c1 = $colors{'cyan'};
+$c2 = $colors{'blue'};
+$c3 = $colors{'red'};
+$c4 = $colors{'green'};
+
+# Check if stdout goes to a tty... can't do colors if we pipe to another
+# program like "more" or "less" or to a file.
+$COLORS = POSIX::isatty(fileno STDOUT) if ($COLORS);
 
 # Generate the log if an argument, and (using $count) add another field
 # to grep's output.
@@ -152,11 +185,25 @@ if (($skip + 20) >= $COL) {
 $mstr = $COL - $skip;
 
 $entries = $i;
+$BOLD = 0;
 
 for ($i=0; $i < $entries; $i++) {
+
+	# Bold every other entry
+	$BOLD = ($i % 2) if ($BOLD_ALTERNATE);
+	
 	# Print the properly justified first 3 fields.
-	printf "%${mnum}s %-${mfile}s %${mline}s ", $rec[$i]->{num}, 
-					$rec[$i]->{file}, $rec[$i]->{line};
+	print "\e[$BOLD;${c1}m" if ($COLORS);
+	printf "%${mnum}s ", $rec[$i]->{num};  
+	print "\e[0m" if ($COLORS);
+
+	print "\e[$BOLD;${c2}m" if ($COLORS);
+	printf "%-${mfile}s ", $rec[$i]->{file}; 
+	print "\e[0m" if ($COLORS);
+	
+	print "\e[$BOLD;${c3}m" if ($COLORS);
+	printf "%${mline}s ", $rec[$i]->{line};
+	print "\e[0m" if ($COLORS);
 
 	# Newline only for "wrapmode".
 	print "\n" if ($wrapmode);
@@ -169,7 +216,9 @@ for ($i=0; $i < $entries; $i++) {
 		print " " x $skip if ($j || $wrapmode);
 
 		# Print only $mstr character substring.
+		print "\e[$BOLD;${c4}m" if ($COLORS);
 		print substr $rec[$i]->{str}, ($j*$mstr), $mstr;
+		print "\e[0m" if ($COLORS);
 		print "\n";
 	}
 }
