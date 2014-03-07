@@ -8,7 +8,7 @@
 #EDITOR=vim
 
 # Default list of files to search through
-#SEARCH=(^Make.*$|^.*\.([chs]|cc|p[lm]|java|.*sh|idl)$)
+#SEARCH=(^Make.*$|^.*\.([chs]|cc|p[lm]|java|php|.*sh|idl)$)
 
 # Default list of stuff to exclude from the search
 #EXCLUDE=SCCS|RCS|tags|\.make\.state
@@ -20,30 +20,30 @@
 #COLORS=1
 
 # Do we alternate bold and non-bold (COLORS=1 required)
-BOLD_ALTERNATE=1
+#BOLD_ALTERNATE=1
 
 # Do we want colon mode on?
-COLON=0
+#COLON=0
 
 # Do we enable to built-in pager?
-PAGER=0
+#PAGER=0
 
 # Colors for each of the rows.  Acceptable values are currently:
 # 'black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan' and 'white'
 # and 'b_color' for bold of that color (eg: 'b_red', 'b_blue')...
 
 # Entry index number
-COLOR1=cyan
+#COLOR1=cyan
 
 # Entry filename & path
-COLOR2=blue
+#COLOR2=blue
 
 # Entry line number
-COLOR3=red
+#COLOR3=red
 
 # Entry text
-COLOR4=green
+#COLOR4=green
 
 # Pager Prompt
-COLOR5=b_white
+#COLOR5=b_white
 

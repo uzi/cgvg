@@ -1,16 +1,35 @@
 ----------------
 Change Log
 ----------------
+March 13, 2002
+1.6.2 - Minor cleanup
+
+	Been a while... haven't really had any need to add or update cgvg.
+	We now have a cscope at http://cscope.sourceforge.net/ which I urge
+	people to look at.  Even then, I still find myself using cgvg a lot.
+
+	I'd like to thank Joachim Bauernberger and Timothy Cava for pointing
+	out the bugs fixed in this release.  Thanks to Sergio Talens-Oliag
+	for packaging it for Debian.  And thanks to everyone who has written
+	a kind email showing your appreciation. :)
+
+	Fixed in this release:
+	* The pager wouldn't allow for selection of item "0".
+	* If $HOSTNAME wasn't set, it was left blank, causing the log cleanup
+	  to fail.
+	* Misplaced negation in log cleanup would always delete files.
+	* More exact matching on checking that an editor is in the $PATH.
+
 August 29, 2000
 1.6.1 - Pretty much added two things... 
 
 	* "Colon mode"... which prints out something like this:
 
-41 cgvg-common.pl:94  open (IN, "<$RCFILE");
+		41 cgvg-common.pl:94  open (IN, "<$RCFILE");
 
 	  instead of this:
 
-41 cgvg-common.pl  94 open (IN, "<$RCFILE");
+		41 cgvg-common.pl  94 open (IN, "<$RCFILE");
 	
 	  written on the request of a coworker who wanted it to mesh with
 	  his editor a bit better.

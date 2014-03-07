@@ -1,7 +1,7 @@
 #!@PERL@
 #
 # vg - Vi Grepped - edit a file at a line specified in a cg search.
-# Copyright 2000 by Joshua Uziel <uzi@uzix.org> - version @VERSION@
+# Copyright 2000-2002 by Joshua Uziel <uzi@uzix.org> - version @VERSION@
 #
 # Usage: vg number
 #
@@ -39,7 +39,7 @@ require 'cgvg-common.pl';
 # We can't edit if the editor doesn't exist.
 `which $EDITOR`;
 $no_editor = $?;
-die "Error: Editor $EDITOR isn't in your path.\n" if ($no_editor);
+die "Error: Editor $EDITOR isn't in your path.\n" if ($no_editor != 0);
 
 # One argument can be numerical only.
 if ($#ARGV == 0) {

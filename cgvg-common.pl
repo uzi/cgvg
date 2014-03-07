@@ -1,5 +1,5 @@
 # cgvg-common.pl - common variables and functions to cgvg
-# Copyright 2000 by Joshua Uziel <uzi@uzix.org> - version 1.6.1
+# Copyright 2000-2002 by Joshua Uziel <uzi@uzix.org> - version 1.6.2
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,7 +19,7 @@
 $LOGDIR = "$ENV{'HOME'}/.cgvg";
 
 # Store the data in a file named for the HOSTNAME.PID of the shell.
-$HOSTNAME = $ENV{'HOSTNAME'};
+$HOSTNAME = $ENV{'HOSTNAME'} ? $ENV{'HOSTNAME'} : "localhost";
 $PPID = getppid;
 $LOGFILE = "$LOGDIR/$HOSTNAME.$PPID";
 
@@ -31,7 +31,7 @@ $RCFILE = "$ENV{'HOME'}/.cgvgrc";
 
 # Default search list:
 # 	Make* *.c *.h *.s *.cc *.pl *.pm *.java *.*sh *.idl
-$SEARCH = '(^Make.*$|^.*\.([chslySC]|cc|p[lm]|java|.*sh|idl)$)';
+$SEARCH = '(^Make.*$|^.*\.([chslySC]|cc|p[lm]|java|php|.*sh|idl)$)';
 
 
 # List of files and strings to exclude from our search.
@@ -55,7 +55,7 @@ $BOLD_ALTERNATE = 1;
 $COLON = 0;
 
 # Use the cg-built-in pager by default... 1 (yes) or 0 (no)
-$PAGER = 1;
+$PAGER = 0;
 
 # Use the $EDITOR env. variable if it exists, else default to something.
 $EDITOR = $ENV{'EDITOR'} ? ($ENV{'EDITOR'}) : "vi";

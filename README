@@ -1,6 +1,6 @@
 Code Grep and Vi Grepped
 cg, vg - tools for finding and modifying on keywords
-Joshua Uziel <uzi@uzix.org> - August 29, 2000 - version 1.6.1
+Joshua Uziel <uzi@uzix.org> - March 13, 2002 - version 1.6.2
 
 [Note: the below is historical... SCO released cscope under a BSD
 license several months ago (http://cscope.sourceforge.net/), which

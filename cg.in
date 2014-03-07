@@ -1,7 +1,7 @@
 #!@PERL@
 #
 # cg - Code Grep - grep recursively through files and disiplay matches
-# Copyright 2000 by Joshua Uziel <uzi@uzix.org> - version @VERSION@
+# Copyright 2000-2002 by Joshua Uziel <uzi@uzix.org> - version @VERSION@
 #
 # usage: cg [-i] [pattern] [files]
 #
@@ -182,7 +182,7 @@ sub log_cleanup {
 			# Extract out the pid and check for the process
 			$pid = $file;
 			$pid =~ s/.*\/$HOSTNAME\.//;
-			$killfile = 1 if (!kill 0, $pid);
+			$killfile = 1 if !(kill 0, $pid);
 		}
 
 		# File modification time is more than AGE days old.
@@ -494,9 +494,11 @@ sub do_pager() {
 	#   and get command character
 	chop $Input;
 	@Keys = split(/\s+/, $Input);
-	do { $Command = shift @Keys; } while ((defined $Command) and !$Command);
+	do {
+		$Command = shift @Keys;
+	} while ((defined $Command) and !$Command and ($Command ne "0"));
 
-	return 1 if !$Command;            # <Return> pressed, display next page
+	return 1 if !$Command and ($Command ne "0");  # <Return>, next page
 	return 1 if ($Command eq "v");
 	return undef if (($Command eq "q") | ($Command eq "Q"));
 	return -1 if (($Command eq "-") | ($Command eq "b") |
