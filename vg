@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+# vg - Vi Grepped - Copyright 1999 by Joshua Uziel <juziel@home.com>
+# This program is released under the GNU General Public License.
+# vg version 1.1
+#
+# Helper script to go with cg for opening a vi session conveniently
+# with the correct file and line as shown in cg's log.  Run this
+# with a single numerical argument (ie. "vg 3") to edit the desired
+# log entry.
+#
+# Note, unless modified, this script was designed to use vi(1) or vim(1),
+# but can easily be changed to whichever editor if you know the command-
+# line option for jumping to a specific line number.
+
+# File where the log is.
+$LOGFILE = "$ENV{'HOME'}/.cglast";
+
+# We need one argument only, and it has to be a number.
+unless ($#ARGV == 0) {
+	die "Error: Single argument needed.\n";
+}
+
+# Set it to $num and test that it is a number.
+$num = $ARGV[0];
+unless (($num =~ /\d+/) && ($num !~ /\D+/)) {
+	die "Error: Argument must be numerical.\n";
+}
+
+if (!-f $LOGFILE) {
+	die "Error: $LOGFILE doesn't exist.\n";
+}
+
+open (IN, "<$LOGFILE");
+
+# Check if our current path is the path when the log was taken.  If so,
+# then nullify $path, else set it to $path/ so we can use anywhere.
+$PWD=`pwd`;
+$path=(split(/=/, <IN>))[1];
+if ($PWD eq $path) {
+	$path="";
+} else {
+	chop($path);
+	$path="$path/";
+}
+
+# Find the line we want and open up vi to that line.
+foreach $line (<IN>) {
+	($this, $file, $line) = (split(/:/, $line))[0,1,2];
+	if ($num == $this) {
+		# Change this to execute vi or vim...
+		exec "vi +$line $path$file";
+	}
+}
+
+# If we're here, there was a problem.
+die "Error: Numerical argument invalid.\n";

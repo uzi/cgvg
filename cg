@@ -1,0 +1,97 @@
+#!/usr/bin/perl
+# cg - Code Grep - Copyright 1999 by Joshua Uziel <juziel@home.com>
+# This program is released under the GNU General Public License.
+# cg version 1.1
+#
+# Recursive Grep script that does a bit of extra work in adding a count
+# field and storing the data in a file.  Run as if you were running
+# grep(1) normally, with only what to search for (and use the default
+# search path), or no arguments to recall last search.
+# Examples: "cg main", "cg", "cg -r main *.c", "cg -i main *.c", etc.
+#
+# The point of this script was to provide source code searching
+# functionality similar to that AT&T's cscope(1).  This is a pure
+# hack and lacks any sophistication, but has the advantage that it
+# can be used for more than just the C programming language, besides
+# adding the functionality that is generally missing from a developer's
+# toolbox.
+
+# Where to store the data
+$LOGFILE = "$ENV{'HOME'}/.cglast";
+
+# List of things to exclude from the search
+$EXCLUDE = "SCCS|RCS|tags|\.make\.state|Binary\ file";
+
+# List of things to search for... see the manpage for find(1).
+$SEARCH = "-name '*.[chs]' -o -name '*.cc' -o -name 'Make*' -o -name '*.pl' ",
+		"-o -name '*.java' -o -name '*.*sh'";
+
+# Generate the log if an argument, and (using $count) add another field
+# to grep's output.
+if ($#ARGV+1) {
+	$count = 0;
+	open (OUT, ">$LOGFILE");
+
+	# Give a point of reference if we change directories.
+	print OUT "PWD=",`pwd`;
+
+	$nondash = 0;
+	foreach (@ARGV) {
+		unless (/^-/) {
+			$nondash++;
+		}
+		break if ($nondash >= 2);
+	}
+
+	if ($nondash >= 2) {
+
+		foreach (`grep -n @ARGV /dev/null | egrep -v "$EXCLUDE"`) {
+			print OUT "$count:$_";
+			$count++;
+		}
+
+	} else {	# Default search - this is faster and preferable.
+
+		# This is the magical line... find all files that fall within
+		# our desired filenames/extensions, excluding all pathnames
+		# that we don't want.
+		@list = `find . \\\( $SEARCH \\\) -print | egrep -v "$EXCLUDE"`;
+
+		# Special case of no matching files, we die with an error.
+		die "error: No matching files found.\n" if ($#list < 0);
+
+		# Remove the leading "./" since we don't need it.
+		foreach (@list) {
+			s/^\.\///;
+		}
+
+		# Remove trailing newlines.
+		chomp @list;
+
+		# Grep for it in our list, allowing arguments to grep, and
+		# adding the extra count field.  Note we also search /dev/null.
+		# This is so if we have one real arg, grep will think we have
+		# two to trick it into always giving us the filename.
+		foreach (`grep -n @ARGV @list /dev/null`) {
+			print OUT "$count:$_";
+			$count++;
+		}
+	}
+	close (OUT);
+}
+
+# Either way, we print the log... and skip the first line.
+if (-f "$LOGFILE") {
+	$count = 0;
+	open (IN, "<$LOGFILE");
+
+	foreach (<IN>) {
+		if ($count) {
+			print;
+		}
+		$count++;
+	}
+	close (IN);
+} else {
+	die "Error: $LOGFILE does not exist.\n";
+}
