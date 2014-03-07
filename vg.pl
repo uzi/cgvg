@@ -1,5 +1,5 @@
 # vg - Vi Grepped - edit a file at a line specified in a cg search.
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5.1
+# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5.2
 #
 # Usage: vg number
 #

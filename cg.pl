@@ -1,5 +1,5 @@
 # cg - Code Grep - grep recursively through files and disiplay matches
-# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5.1
+# Copyright 1999 by Joshua Uziel <juziel@home.com> - version 1.5.2
 #
 # usage: cg [-i] [pattern] [files]
 #
@@ -123,7 +123,6 @@ if (-f $RCFILE) {
 		} elsif ($key =~ /^EDITOR$/) {
 			$EDITOR=$value;
 		} elsif ($key =~ /^SEARCH$/) {
-			print "$value\n";
 			$SEARCH=$value;
 
 		# Change colors from the defaults.
@@ -219,6 +218,13 @@ if ($#ARGV+1) {
 
 	# Remove files found in our $EXCLUDE list
 	@LIST = grep !/$EXCLUDE/, @LIST;
+
+	# For directories, do the find(s) down that directory.
+	for ($i=0; $i<=$#LIST; $i++) {
+		if (-d $LIST[$i]) {
+			&find($LIST[$i]);
+		}
+	}
 
 	# Special case of no matching files, we die with an error.
 	die "error: No matching files found.\n" if ($#LIST < 0);

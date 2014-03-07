@@ -1,6 +1,6 @@
 Code Grep and Vi Grepped
 cg, vg - tools for finding and modifying on keywords
-Joshua Uziel <juziel@home.com> - August 25, 1999 - version 1.5.1
+Joshua Uziel <juziel@home.com> - October 1, 1999 - version 1.5.2
 
 All too often I need to dig through source code.  Where something
 is defined, used, what files, etc.  There's a great tool for doing
@@ -70,6 +70,14 @@ of time.  Feel free to send me comments or suggestions...
 ----------------
 REVISION HISTORY
 ----------------
+October 1, 1999
+1.5.2 - Just a small bugfix release.  First, I removed a debug statement
+	that I forgot to take out before sending off the last version
+	(oops).  The bigger change is that now it'll parse through
+	directories that are given as arguments... so if you do a
+	"cg 'pattern' dir1 dir2", it'll recursively search through
+	those directories.
+
 August 25, 1999
 1.5.1 - Fixed a bug where if one and only one file was specified
 	to search through and it was an existing text file that it
