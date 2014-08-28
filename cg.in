@@ -39,10 +39,11 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 use POSIX;
-require "find.pl";
 
 # Include our general functions and variables.
 use File::Basename;
+use File::Find ();
+*name = *File::Find::name;
 
 BEGIN { $prefix = "@prefix@" }
 use lib dirname($0), "@datadir@/cgvg";
@@ -168,7 +169,7 @@ $LOGFILE = $LASTLOG if ($uselast);
 #--------------------------------------------------------------------------#
 
 #
-# Clean up code.  We generate a bunch of log files over time, and we 
+# Clean up code.  We generate a bunch of log files over time, and we
 # want to clean 'em up if we don't need them.  Search for files for the
 # present host to clean up by seeing if the shell that ran them possibly
 # still exists.
@@ -221,12 +222,12 @@ sub get_number_of_columns_rows {
 		$ROW =~ s/\D*(\d+)\D*/$1/;
 
 		# For Cols, Something's weird if 0, and we want more than 40.
-		die "Error: Zero value found for number of columns.\n" 
+		die "Error: Zero value found for number of columns.\n"
 			if ($COL == 0);
 		die "Error: Too few columns to work with.\n" if ($COL < 40);
 
 		# For Rows, Something's weird if 0, and we want more than 4.
-		die "Error: Zero value found for number of rows.\n" 
+		die "Error: Zero value found for number of rows.\n"
 			if ($ROW == 0);
 		die "Error: Too few rows to work with.\n" if ($ROW < 4);
 
@@ -257,6 +258,12 @@ sub wanted {
 	}
 }
 
+#
+# File::Find helper
+#
+sub find {
+	&File::Find::find(\&wanted, @_);
+}
 
 #
 # Generate the list of files to search through.
@@ -333,7 +340,7 @@ sub read_log {
 		chomp $in;
 
 		# Split and strip the first few colons, leave the rest.
-		($rec[$i]->{num}, $rec[$i]->{file}, $rec[$i]->{line}, 
+		($rec[$i]->{num}, $rec[$i]->{file}, $rec[$i]->{line},
 			$rec[$i]->{str}) = split /:/, $in, 4;
 
 		# Remove all leading whitespace.
@@ -342,7 +349,7 @@ sub read_log {
 		# Swap tabs for 8 spaces
 		$rec[$i]->{str} =~ s/\t/        /g;
 		
-		# If we have a longer length for this field, save it. 
+		# If we have a longer length for this field, save it.
 		if ($COLON) {
 			# Store it as filename length in colon mode
 			$tmp = length $rec[$i]->{file};
@@ -395,12 +402,12 @@ sub display_read_log {
 
 		# Print the properly justified first 3 fields.
 		print "\e[$b[1];${c[1]}m" if ($COLORS);
-		printf "%${mnum}s ", $rec[$i]->{num};  
+		printf "%${mnum}s ", $rec[$i]->{num};
 		print "\e[0m" if ($COLORS);
 
 		if ($COLON) {
 			print "\e[$b[2];${c[2]}m" if ($COLORS);
-			printf "%s", $rec[$i]->{file}; 
+			printf "%s", $rec[$i]->{file};
 			print "\e[0m" if ($COLORS);
 			
 			print ":";
@@ -415,7 +422,7 @@ sub display_read_log {
 			print " " x $colnumsp;
 		} else {
 			print "\e[$b[2];${c[2]}m" if ($COLORS);
-			printf "%-${mfile}s ", $rec[$i]->{file}; 
+			printf "%-${mfile}s ", $rec[$i]->{file};
 			print "\e[0m" if ($COLORS);
 			
 			print "\e[$b[3];${c[3]}m" if ($COLORS);

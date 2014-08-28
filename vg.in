@@ -44,14 +44,14 @@ die "Error: Editor $EDITOR isn't in your path.\n" if ($no_editor != 0);
 # One argument can be numerical only.
 if ($#ARGV == 0) {
 	$num = $ARGV[0];
-	die "Error: Non-numerical argument.\n" 
+	die "Error: Non-numerical argument.\n"
 		unless (($num =~ /\d+/) && ($num !~ /\D+/));
 
 # Two arguments must be '-l' and then a number.
 } elsif ($#ARGV == 1) {
 	die "Error: Unknown option.\n" unless ($ARGV[0] == '-l');
 	$num = $ARGV[1];
-	die "Error: Non-numerical argument.\n" 
+	die "Error: Non-numerical argument.\n"
 		unless (($num =~ /\d+/) && ($num !~ /\D+/));
 	$LOGFILE = $LASTLOG;
 

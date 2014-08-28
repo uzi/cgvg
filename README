@@ -1,6 +1,6 @@
 Code Grep and Vi Grepped
 cg, vg - tools for finding and modifying on keywords
-Joshua Uziel <uzi@uzix.org> - March 13, 2002 - version 1.6.2
+Joshua Uziel <uzi@uzix.org> - August 28, 2014 - version 1.6.3
 
 [Note: the below is historical... SCO released cscope under a BSD
 license several months ago (http://cscope.sourceforge.net/), which
@@ -18,8 +18,8 @@ is defined... not wherever it is used, which makes it frustrating
 when, for example, you're at the definition of a function and
 instead want to see who and what use that function.
 
-So, as a quick hack, mostly for myself, I started writing up some 
-perl scripts (I consciously chose perl, but considered other 
+So, as a quick hack, mostly for myself, I started writing up some
+perl scripts (I consciously chose perl, but considered other
 languages first).  One script, "cg", does the equivalent of a find
 and grep, storing matches and then displaying it in a human-friendly
 manner.  Run it like so:
@@ -56,7 +56,7 @@ as well as a built-in pager.  The pager allows for colors while
 paging (that "more" or "less" can't deal with), as well as allowing
 one to go back or launch an editor directly using our other script...
 
-The other script is called "vg" and opens an editor on what has been 
+The other script is called "vg" and opens an editor on what has been
 grepped (most editors work).  So remember that count?  All you
 have to do is run "vg count" and it'll fire off a editor in that file
 and at that line number.  So, in our example, running "vg 1" would

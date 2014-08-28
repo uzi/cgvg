@@ -1,5 +1,5 @@
 # cgvg-common.pl - common variables and functions to cgvg
-# Copyright 2000-2002 by Joshua Uziel <uzi@uzix.org> - version 1.6.2
+# Copyright 2000-2014 by Joshua Uziel <uzi@uzix.org> - version 1.6.3
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,12 +30,11 @@ $LASTLOG = "$ENV{'HOME'}/.cglast";
 $RCFILE = "$ENV{'HOME'}/.cgvgrc";
 
 # Default search list:
-# 	Make* *.c *.h *.s *.cc *.pl *.pm *.java *.*sh *.idl
-$SEARCH = '(^Make.*$|^.*\.([chslySC]|cc|p[lm]|java|php|.*sh|idl)$)';
-
+# 	Make* *.c *.h *.s *.cc *.pl *.pm *.py *.java *.*sh *.idl
+$SEARCH = '(^Make.*$|^.*\.([chslySC]|cc|p[lmy]|java|php|.*sh|idl)$)';
 
 # List of files and strings to exclude from our search.
-$EXCLUDE = "SCCS|RCS|tags|\.make\.state";
+$EXCLUDE = "SCCS|RCS|tags|\.make\.state|\.git";
 
 # Oldest age (in days) before we delete.
 $AGE = 30;
@@ -88,7 +87,7 @@ $color[5] = 'b_white';
 # Set b (bold) and c (color) values for printing
 for ($i=1; $i<=5; $i++) {
 	$c[$i] = $colors{$color[$i]};
-	$b[$i] = ($color[$i] =~ /^b_/) ? 1 : 0; 
+	$b[$i] = ($color[$i] =~ /^b_/) ? 1 : 0;
 }
 
 # Code to parse the RCFILE entries
@@ -129,7 +128,7 @@ sub parse_rcfile {
 			} elsif ($key =~ /^COLOR[1-5]$/) {
 
 				# See that a legal color has been given
-				if ($value =~ 
+				if ($value =~
 /^(black|red|green|yellow|blue|magenta|cyan|white|\
 |b_black|b_red|b_green|b_yellow|b_blue|b_magenta|b_cyan|b_white)$/) {
 					$coltmp = $key;
